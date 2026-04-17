@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario Pro v8.15 - Tablet Edition</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .glass-effect { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1); }
+        .btn-gradient { background-image: linear-gradient(to right, #6366f1, #8b5cf6, #a855f7); color: white; }
+        
+        /* TOUCH OPTIMIZATIONS */
+        input[type="checkbox"] { width: 1.75rem; height: 1.75rem; cursor: pointer; accent-color: #6366f1; }
+        input[type="radio"] { width: 1.5rem; height: 1.5rem; cursor: pointer; }
+        select, input[type="search"], input[type="text"], input[type="number"], textarea { font-size: 1.125rem; padding: 0.75rem; }
+        .touch-icon { padding: 0.75rem 1rem; font-size: 1.5rem; border-radius: 0.75rem; }
+        .touch-icon:active { background-color: rgba(0,0,0,0.1); }
+        
+        /* PESTAÑAS REDISEÑADAS Y OPTIMIZADAS PARA ESPACIO */
+        #tabs-container { display: flex; align-items: flex-end; border-bottom: 2px solid #d1d5db; padding-left: 0.5rem; padding-top: 0.25rem; background-color: #ffffff; border-radius: 0.75rem 0.75rem 0 0; }
+        .tab-btn { font-size: 1rem; padding: 0.5rem 1rem; border-radius: 0.5rem 0.5rem 0 0; background-color: #f3f4f6; color: #6b7280; margin-right: 0.25rem; transition: all 0.2s; border: 2px solid transparent; border-bottom: none; }
+        .tab-btn:hover { background-color: #e5e7eb; }
+        .tab-btn.active { background-color: #ffffff; border-color: #d1d5db; border-top: 4px solid #6366f1; color: #6366f1; font-weight: 700; position: relative; margin-bottom: -2px; z-index: 10; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .modal-overlay.show { opacity: 1; pointer-events: auto; }
+        .inventory-table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        
+        .has-note { background-color: #fffbeb; }
+        .item-located { background-color: #f0fdf4; }
+        .location-chip { display: inline-flex; align-items: center; background-color: #e0e7ff; color: #3730a3; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; margin-right: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #c7d2fe; }
+        .location-chip i { font-size: 1rem; padding-left: 0.5rem; }
+
+        /* HEADER PEGADO */
+        .sticky-header { position: sticky; top: 0; z-index: 50; background-color: #f3f4f6; padding-top: 0.5rem; padding-bottom: 0.25rem; }
+    </style>
+</head>
+<body class="text-gray-800 text-lg">
+
+    <div id="loading-overlay" class="modal-overlay" style="z-index: 2000;">
+        <div class="text-white text-xl font-bold text-center w-full max-w-xs">
+            <i id="loading-spinner" class="fa-solid fa-spinner fa-spin fa-3x"></i>
+            <p id="loading-text" class="mt-4 text-2xl">Procesando...</p>
+        </div>
+    </div>
+
+    <div id="conflict-modal" class="modal-overlay" style="z-index: 1200;">
+        <div class="bg-white p-5 md:p-6 md:rounded-2xl shadow-2xl w-full max-w-4xl h-full md:h-[85vh] flex flex-col">
+            <h3 class="text-2xl font-black mb-1 text-orange-600"><i class="fa-solid fa-code-merge mr-2"></i>Resolver Conflictos</h3>
+            <p class="text-gray-600 mb-4 text-sm font-medium leading-tight border-b pb-3">Se encontraron bienes que ya estaban ubicados en tu tableta, pero que vienen con datos diferentes en el archivo que estás importando. Elige qué versión deseas conservar para cada uno.</p>
+            <div id="conflict-list" class="flex-grow overflow-y-auto space-y-4 pr-2"></div>
+            <div class="flex justify-end mt-4 border-t pt-4">
+                <button id="resolve-conflicts-btn" class="px-6 py-3 bg-orange-500 text-white rounded-xl text-lg font-bold w-full md:w-auto shadow-md hover:bg-orange-600 transition-colors"><i class="fa-solid fa-check-double mr-2"></i>Aplicar Selecciones y Finalizar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="qr-modal" class="modal-overlay" style="z-index: 2000;">
+        <div class="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl flex flex-col">
+            <h3 class="text-2xl font-bold mb-4 text-center text-indigo-900"><i class="fa-solid fa-qrcode mr-2"></i>Escáner de Código</h3>
+            <div id="qr-reader" class="w-full bg-gray-100 rounded-xl overflow-hidden border-2 border-indigo-200 min-h-[250px] flex items-center justify-center"></div>
+            <button id="qr-close-btn" class="mt-6 px-6 py-4 bg-red-100 text-red-600 rounded-xl text-xl font-bold w-full hover:bg-red-200 transition-colors">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="confirmation-modal" class="modal-overlay" style="z-index: 1100;"><div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md"><h3 id="modal-title" class="text-2xl font-bold mb-3">Confirmación</h3><p id="modal-text" class="mb-6 text-lg text-gray-600">¿Estás seguro?</p><div class="flex justify-end space-x-3"><button id="modal-cancel" class="px-5 py-2.5 rounded-xl bg-gray-200 text-lg font-medium">Cancelar</button><button id="modal-confirm" class="px-5 py-2.5 rounded-xl text-white bg-indigo-500 text-lg font-bold">Confirmar</button></div></div></div>
+    
+    <div id="notes-modal" class="modal-overlay" style="z-index: 1050;"><div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-xl"><h3 class="text-2xl font-bold mb-3">Añadir/Editar Nota</h3><textarea id="note-textarea" class="w-full h-40 p-3 border-2 rounded-xl text-lg outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" placeholder="Escribe tu nota aquí..."></textarea><div class="flex justify-end space-x-3 mt-4"><button id="note-cancel-btn" class="px-5 py-3 rounded-xl bg-gray-200 text-lg font-bold">Cancelar</button><button id="note-save-btn" class="px-5 py-3 rounded-xl text-white bg-green-500 text-lg font-bold">Guardar Nota</button></div></div></div>
+    
+    <div id="item-detail-view-modal" class="modal-overlay" style="z-index: 1000;">
+        <div class="bg-white p-0 w-11/12 max-w-6xl md:rounded-2xl flex flex-col shadow-2xl h-[85vh]">
+            <header class="flex-shrink-0 flex justify-between items-center p-4 border-b-2 border-gray-200 bg-gray-50 rounded-t-2xl">
+                <h3 class="text-2xl font-bold text-indigo-900"><i class="fa-solid fa-box-open mr-2"></i>Detalles del Bien</h3>
+                <button id="detail-view-close-btn" class="p-3 rounded-xl bg-gray-200 hover:bg-gray-300"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </header>
+            <main class="flex-grow overflow-y-auto p-5 flex flex-col md:flex-row gap-6">
+                <div class="w-full md:w-5/12 flex flex-col">
+                    <div id="detail-view-photo-container" class="w-full flex-grow min-h-[300px] bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 relative group">
+                        <img id="detail-view-photo" src="" class="hidden max-w-full max-h-full object-contain rounded-xl absolute inset-0 m-auto p-2">
+                        <button id="delete-active-photo-btn" class="hidden absolute top-4 right-4 bg-red-500 text-white w-14 h-14 rounded-full shadow-lg hover:bg-red-600 transition-colors z-10 flex items-center justify-center" title="Eliminar y Retomar"><i class="fa-solid fa-xmark text-2xl"></i></button>
+                        <span id="detail-view-no-photo" class="text-2xl text-gray-400 font-bold flex flex-col items-center"><i class="fa-solid fa-image text-5xl mb-2"></i>Sin fotografía</span>
+                    </div>
+                </div>
+                <div class="w-full md:w-7/12 flex flex-col space-y-3 text-lg">
+                    <p class="flex justify-between border-b pb-2"><span class="font-bold text-gray-500">Clave Única:</span> <span id="detail-view-clave" class="font-mono text-2xl font-black text-indigo-700"></span></p>
+                    <p class="border-b pb-2"><span class="font-bold text-gray-500 block mb-1">Descripción:</span> <span id="detail-view-descripcion" class="text-xl font-bold text-gray-800 leading-tight"></span></p>
+                    <div class="grid grid-cols-12 gap-2 border-b pb-2">
+                        <p class="col-span-5"><span class="font-bold text-gray-500 block text-sm uppercase">Marca</span> <span id="detail-view-marca" class="text-lg font-medium"></span></p>
+                        <p class="col-span-4"><span class="font-bold text-gray-500 block text-sm uppercase">Modelo</span> <span id="detail-view-modelo" class="text-lg font-medium"></span></p>
+                        <p class="col-span-3 pr-2"><span class="font-bold text-gray-500 block text-sm uppercase">Serie</span> <span id="detail-view-serie" class="text-lg font-mono font-medium break-all block"></span></p>
+                    </div>
+                    <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mt-1">
+                        <p><span class="font-bold text-indigo-800 text-sm">Asignado a:</span> <span id="detail-view-usuario" class="font-bold text-xl ml-2 block"></span></p>
+                        <p class="mt-1"><span class="font-bold text-indigo-800 text-sm">Ubicación Física:</span> <span id="detail-view-ubicacion-especifica" class="text-lg ml-2 block"></span></p>
+                        <p class="mt-1"><span class="font-bold text-indigo-800 text-sm">Área Base:</span> <span id="detail-view-area" class="text-lg ml-2 block"></span></p>
+                    </div>
+                    
+                    <div class="mt-auto grid grid-cols-2 lg:grid-cols-5 gap-3 pt-3 border-t-2 border-gray-100">
+                        <button id="detail-btn-ubicar" class="py-4 px-2 bg-green-500 text-white rounded-xl font-bold shadow-sm hover:bg-green-600 text-sm"><i class="fa-solid fa-check mr-1"></i>Ubicar</button>
+                        <button id="detail-btn-reetiquetar" class="py-4 px-2 bg-blue-500 text-white rounded-xl font-bold shadow-sm hover:bg-blue-600 text-sm"><i class="fa-solid fa-tags mr-1"></i>Re-etiquetar</button>
+                        <button id="detail-btn-desubicar" class="py-4 px-2 bg-orange-500 text-white rounded-xl font-bold shadow-sm hover:bg-orange-600 text-sm"><i class="fa-solid fa-rotate-left mr-1"></i>Quitar</button>
+                        <button id="detail-btn-nota" class="py-4 px-2 bg-yellow-500 text-white rounded-xl font-bold shadow-sm hover:bg-yellow-600 text-sm"><i class="fa-solid fa-note-sticky mr-1"></i>Nota</button>
+                        <button id="detail-btn-foto" class="py-4 px-2 bg-indigo-500 text-white rounded-xl font-bold shadow-sm hover:bg-indigo-600 text-sm"><i class="fa-solid fa-camera mr-1"></i>Foto</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="adicional-detail-view-modal" class="modal-overlay" style="z-index: 1000;">
+        <div class="bg-white p-0 w-11/12 max-w-6xl md:rounded-2xl flex flex-col shadow-2xl h-[85vh]">
+            <header class="flex-shrink-0 flex justify-between items-center p-4 border-b-2 border-gray-200 bg-gray-50 rounded-t-2xl">
+                <h3 class="text-2xl font-bold text-indigo-900"><i class="fa-solid fa-plus-circle mr-2"></i>Detalle Adicional</h3>
+                <button id="adicional-detail-close-btn" class="p-3 rounded-xl bg-gray-200 hover:bg-gray-300"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </header>
+            <main class="flex-grow overflow-y-auto p-5 flex flex-col md:flex-row gap-6">
+                <div class="w-full md:w-5/12 flex flex-col">
+                    <div id="ad-det-photo-container" class="w-full flex-grow min-h-[300px] bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 relative">
+                        <img id="ad-det-photo" src="" class="hidden max-w-full max-h-full object-contain rounded-xl absolute inset-0 m-auto p-2">
+                        <button id="ad-delete-photo-btn" class="hidden absolute top-4 right-4 bg-red-500 text-white w-14 h-14 rounded-full shadow-lg hover:bg-red-600 transition-colors z-10 flex items-center justify-center" title="Eliminar y Retomar"><i class="fa-solid fa-xmark text-2xl"></i></button>
+                        <span id="ad-det-no-photo" class="text-2xl text-gray-400 font-bold flex flex-col items-center"><i class="fa-solid fa-image text-5xl mb-2"></i>Sin fotografía</span>
+                    </div>
+                </div>
+                <div class="w-full md:w-7/12 flex flex-col space-y-3 text-lg">
+                    <p class="border-b pb-2"><span class="font-bold text-gray-500 block text-sm">Descripción</span> <span id="ad-det-desc" class="font-bold text-xl text-gray-800 leading-tight"></span></p>
+                    <p class="flex justify-between border-b pb-2"><span class="font-bold text-gray-500 block text-sm">Clave Asignada</span> <span id="ad-det-clave" class="font-mono text-indigo-600 font-bold text-xl"></span></p>
+                    <div class="grid grid-cols-12 gap-2 border-b pb-2">
+                        <p class="col-span-5"><span class="font-bold text-gray-500 block text-sm">Marca</span> <span id="ad-det-marca" class="text-lg"></span></p>
+                        <p class="col-span-4"><span class="font-bold text-gray-500 block text-sm">Modelo</span> <span id="ad-det-modelo" class="text-lg"></span></p>
+                        <p class="col-span-3 pr-2"><span class="font-bold text-gray-500 block text-sm">Serie</span> <span id="ad-det-serie" class="font-mono text-lg break-all block"></span></p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 border-b pb-2">
+                        <p><span class="font-bold text-gray-500 block text-sm">Posesión</span> <span id="ad-det-posesion" class="text-lg"></span></p>
+                        <p><span class="font-bold text-gray-500 block text-sm">¿Es Personal?</span> <span id="ad-det-personal" class="text-lg"></span></p>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mt-1">
+                        <p><span class="font-bold text-gray-500 block text-sm">Usuario Asignado</span> <span id="ad-det-usuario" class="font-bold text-green-700 text-xl block"></span></p>
+                        <p class="mt-1"><span class="font-bold text-gray-500 block text-sm">Ubicación Física</span> <span id="ad-det-ubicacion" class="text-lg block"></span></p>
+                    </div>
+                    <div class="mt-auto flex justify-end border-t-2 pt-4 gap-3">
+                        <button id="ad-det-foto-btn" class="py-4 px-6 bg-indigo-500 text-white font-bold rounded-xl text-lg shadow-sm hover:bg-indigo-600 transition-colors w-full md:w-auto"><i class="fa-solid fa-camera mr-2"></i>Foto</button>
+                        <button id="ad-det-edit-btn" class="py-4 px-6 bg-blue-100 text-blue-700 font-bold rounded-xl text-lg shadow-sm hover:bg-blue-200 transition-colors w-full md:w-auto"><i class="fa-solid fa-pen-to-square mr-2"></i>Editar Datos</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="user-detail-view-modal" class="modal-overlay" style="z-index: 1050;"><div class="bg-white p-6 rounded-2xl w-full max-w-lg shadow-2xl"><h3 class="text-2xl font-bold mb-4 text-indigo-900 border-b pb-3">Detalles del Usuario</h3><p class="mb-3 text-lg"><span class="font-bold text-gray-500">Nombre:</span> <span id="user-detail-view-name" class="font-bold block mt-1"></span></p><p class="mb-3 text-lg"><span class="font-bold text-gray-500">Área:</span> <span id="user-detail-view-area" class="block mt-1 font-bold text-indigo-700"></span></p><div class="mt-3"><span class="font-bold text-gray-500 text-lg">Ubicaciones Asignadas:</span> <div id="user-detail-view-location" class="mt-2 pl-4 text-lg bg-gray-50 p-3 rounded-xl max-h-48 overflow-y-auto"></div></div><div class="flex justify-end mt-6"><button id="user-detail-view-close-btn" class="px-6 py-3 bg-gray-200 text-lg font-bold rounded-xl">Cerrar</button></div></div></div>
+    
+    <div id="edit-user-modal" class="modal-overlay" style="z-index: 1050;"><div class="bg-white p-6 rounded-2xl w-full max-w-2xl shadow-2xl"><h3 class="text-2xl font-bold mb-4">Editar Usuario</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="space-y-3"><div><label class="block text-gray-600 font-bold mb-1">Nombre</label><input type="text" id="edit-user-name" list="lista-responsables" class="w-full rounded-xl border-2 p-2 text-lg"></div><div><label class="block text-gray-600 font-bold mb-1">Área Base</label><select id="edit-user-area" class="w-full rounded-xl border-2 p-2 text-lg"></select></div></div><div class="bg-gray-50 p-3 rounded-xl border"><label class="block text-gray-600 font-bold mb-2">Añadir Ubicación</label><div class="flex flex-col space-y-2"><select id="edit-user-location-type" class="w-full rounded-xl border-2 p-2 text-lg">
+                                            <option value="ARCHIVO">ARCHIVO</option>
+                                            <option value="AREA SECRETARIAL">ÁREA SECRETARIAL</option>
+                                            <option value="BODEGA">BODEGA</option>
+                                            <option value="CABALLERIZA">CABALLERIZA</option>
+                                            <option value="CUBICULO">CUBÍCULO</option>
+                                            <option value="FOTOCOPIADO">FOTOCOPIADO</option>
+                                            <option value="MODULO">MÓDULO</option>
+                                            <option value="OFICINA">OFICINA</option>
+                                            <option value="PAPELERIA">PAPELERÍA</option>
+                                            <option value="PASILLO">PASILLO</option>
+                                            <option value="RECEPCION">RECEPCIÓN</option>
+                                            <option value="SALA DE ESPERA">SALA DE ESPERA</option>
+                                            <option value="SALA DE JUNTAS">SALA DE JUNTAS</option>
+                                            <option value="SITE">SITE</option>
+                                            <option value="OTRA">Otra (manual)...</option>
+                                        </select><input type="text" id="edit-user-location-manual" class="hidden w-full rounded-xl border-2 p-2 text-lg" placeholder="Ubicación manual"><button id="edit-add-location-btn" class="px-4 py-3 bg-blue-500 text-white rounded-xl font-bold text-lg"><i class="fa-solid fa-plus mr-2"></i>Añadir a lista</button></div></div></div><div id="edit-user-locations-list" class="flex flex-wrap gap-2 p-3 bg-white border-2 border-dashed rounded-xl min-h-[4rem] mt-4"></div><div class="flex justify-end space-x-3 mt-6"><button id="edit-user-cancel-btn" class="px-6 py-3 bg-gray-200 rounded-xl text-lg font-bold">Cancelar</button><button id="edit-user-save-btn" class="px-6 py-3 text-white bg-indigo-500 rounded-xl text-lg font-bold">Guardar</button></div></div></div>
+
+    <div id="edit-adicional-modal" class="modal-overlay" style="z-index: 1050;"><div class="bg-white p-6 rounded-2xl w-full max-w-3xl shadow-2xl"><h3 class="text-2xl font-bold mb-4"><i class="fa-solid fa-pen-to-square mr-2"></i>Editar Bien Adicional</h3><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div><label class="font-bold text-gray-600 block mb-1">Clave</label><input type="text" id="edit-ad-clave" class="w-full border-2 p-2 rounded-xl text-lg"></div><div><label class="font-bold text-gray-600 block mb-1">Descripción</label><input type="text" id="edit-ad-desc" list="lista-descripciones" class="w-full border-2 p-2 rounded-xl text-lg"></div><div><label class="font-bold text-gray-600 block mb-1">Marca</label><input type="text" id="edit-ad-marca" list="lista-marcas" class="w-full border-2 p-2 rounded-xl text-lg"></div><div><label class="font-bold text-gray-600 block mb-1">Modelo</label><input type="text" id="edit-ad-modelo" list="lista-modelos" class="w-full border-2 p-2 rounded-xl text-lg"></div><div class="md:col-span-2"><label class="font-bold text-gray-600 block mb-1">Serie</label><input type="text" id="edit-ad-serie" class="w-full border-2 p-2 rounded-xl text-lg"></div><div><label class="font-bold text-gray-600 block mb-1">Posesión</label><select id="edit-ad-posesion" class="w-full border-2 p-2 rounded-xl text-lg"><option value="Cámara">Cámara</option><option value="Arrendamiento">Arrendamiento</option><option value="Propiedad del Grupo">Propiedad del Grupo</option></select></div><div class="md:col-span-2 hidden" id="edit-contenedor-contrato"><label class="font-bold text-blue-800 block mb-1 text-sm"><i class="fa-solid fa-file-signature mr-1"></i>Número de Contrato</label><input type="text" id="edit-ad-num-contrato" class="w-full border-2 border-blue-300 bg-blue-50 p-2.5 rounded-xl text-lg"></div><div class="md:col-span-2"><label class="font-bold text-gray-600 block mb-1">¿Personal?</label><select id="edit-ad-personal" class="w-full border-2 p-2 rounded-xl text-lg"><option value="Si">Sí</option><option value="No">No</option></select></div></div><div class="flex justify-end space-x-3 mt-6 border-t pt-4"><button id="edit-adicional-cancel-btn" class="px-6 py-3 bg-gray-200 rounded-xl text-lg font-bold">Cancelar</button><button id="edit-adicional-save-btn" class="px-6 py-3 text-white bg-indigo-500 rounded-xl text-lg font-bold">Guardar Cambios</button></div></div></div>
+
+    <div id="formato-entrada-modal" class="modal-overlay" style="z-index: 1050;"><div class="bg-white p-6 rounded-2xl w-full max-w-md text-center shadow-2xl"><i class="fa-solid fa-file-contract text-5xl text-indigo-500 mb-3"></i><h3 class="text-2xl font-bold mb-2">Bien Personal</h3><p class="mb-6 text-lg text-gray-600">¿Este equipo cuenta con formato de entrada al área?</p><div class="flex justify-center gap-3"><button id="formato-entrada-no" class="px-6 py-3 text-white bg-red-500 rounded-xl text-lg font-bold flex-1">No</button><button id="formato-entrada-si" class="px-6 py-3 text-white bg-green-500 rounded-xl text-lg font-bold flex-1">Sí</button></div></div></div>
+    
+    <div id="photo-modal" class="modal-overlay" style="z-index: 1050;"><div class="bg-white p-6 rounded-2xl w-full max-w-4xl shadow-2xl"><h3 id="photo-modal-title" class="font-black mb-4 text-xl border-b pb-2 text-indigo-900 truncate">Fotografía</h3><div class="flex flex-col md:flex-row gap-4"><div id="photo-view-container" class="hidden text-center w-full"><img id="item-photo-img" src="" class="max-h-80 mx-auto rounded-xl shadow-md border-4 border-gray-200"><button id="delete-photo-btn" class="mt-4 px-6 py-3 text-white bg-red-500 rounded-xl text-lg font-bold w-full max-w-sm mx-auto block"><i class="fa-solid fa-trash mr-2"></i> Eliminar Foto</button></div><input type="file" id="photo-input" class="hidden" accept="image/*"><div id="camera-view-container" class="hidden w-full flex-col"><video id="camera-stream" playsinline class="w-full rounded-2xl shadow-inner bg-black max-h-80 object-cover"></video><canvas id="photo-canvas" class="hidden"></canvas><div class="flex gap-3 mt-4"><button id="capture-photo-btn" class="flex-[3] py-4 btn-gradient rounded-xl text-xl font-bold text-white w-full shadow-md"><i class="fa-solid fa-circle-camera mr-2"></i> Capturar Foto</button><button id="upload-gallery-btn" class="flex-[1] py-4 bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors rounded-xl text-xl font-bold w-full shadow-md" title="Subir de Galería"><i class="fa-solid fa-image"></i></button></div></div></div><div class="flex justify-end mt-4 border-t pt-4"><button id="photo-close-btn" class="px-6 py-3 bg-gray-200 rounded-xl text-lg font-bold">Cerrar Ventana</button></div></div></div>
+
+    <div id="app-container" class="min-h-screen p-2 md:p-4 bg-gray-100">
+        
+        <div id="login-page" class="w-full max-w-lg mx-auto mt-12 p-8 rounded-3xl shadow-2xl glass-effect text-center border">
+            <img src="logo.png" alt="Logo" class="max-w-xs mx-auto mb-4 h-24 object-contain" onerror="this.style.display='none'">
+            <h1 class="text-3xl font-extrabold mb-1 text-indigo-900">Inventario Pro</h1>
+            <p class="text-lg text-gray-500 mb-6 font-medium">Tablet Edition v8.15</p>
+            <input type="number" id="employee-number-input" class="w-full rounded-2xl border-2 p-4 text-xl mb-5 text-center shadow-sm" placeholder="Num. Empleado">
+            <button id="employee-login-btn" class="w-full py-4 rounded-2xl text-xl font-bold btn-gradient shadow-lg">Ingresar al Sistema</button>
+        </div>
+
+        <div id="main-app" class="hidden w-full max-w-full mx-auto flex flex-col">
+            
+            <header id="main-header" class="p-3 md:p-4 rounded-xl shadow-md glass-effect flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border mb-3 transition-all">
+                <div class="flex items-center w-full md:w-auto">
+                    <img src="logo.png" alt="Logo" class="h-10 md:h-12 object-contain mr-3" onerror="this.style.display='none'">
+                    <div class="flex-grow">
+                        <h2 class="text-xl md:text-2xl font-extrabold text-indigo-900 leading-tight">Inventario Pro</h2>
+                        <p class="text-xs text-gray-500 font-medium">Modo Tableta</p>
+                        
+                        <div class="flex items-center mt-1 flex-wrap gap-2">
+                            <div id="header-area-info" class="hidden text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded-md border border-indigo-100 font-bold max-w-xs truncate"></div>
+                            <div id="header-progress" class="hidden text-[10px] bg-green-50 text-green-700 px-1.5 py-0.5 rounded-md border border-green-200 font-bold shadow-sm"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
+                    <span id="current-user-name" class="text-sm font-bold text-gray-700 hidden md:inline"></span>
+                    <button id="upload-btn" class="flex-1 md:flex-none py-3 px-4 rounded-xl bg-indigo-500 text-white font-bold text-sm"><i class="fa-solid fa-file-excel mr-2"></i>Cargar Excel</button>
+                    <input type="file" id="file-input" class="hidden" multiple accept=".xls,.xlsx,.csv">
+                    <button id="logout-btn" class="flex-1 md:flex-none py-3 px-4 rounded-xl bg-red-100 text-red-600 font-bold text-sm border border-red-200">Salir</button>
+                </div>
+            </header>
+
+            <div id="dashboard-stats" class="grid grid-cols-3 gap-3 mb-2 transition-all">
+                <div class="p-3 md:p-4 rounded-xl shadow-md glass-effect border-t-4 border-indigo-500 text-center"><h3 class="text-sm md:text-base font-bold text-gray-500 mb-1">Asignado</h3><p id="total-items" class="text-2xl md:text-3xl font-extrabold text-indigo-900">0</p></div>
+                <div class="p-3 md:p-4 rounded-xl shadow-md glass-effect border-t-4 border-green-500 text-center"><h3 class="text-sm md:text-base font-bold text-gray-500 mb-1">Ubicados</h3><p id="located-items" class="text-2xl md:text-3xl font-extrabold text-green-600">0</p></div>
+                <div class="p-3 md:p-4 rounded-xl shadow-md glass-effect border-t-4 border-red-500 text-center"><h3 class="text-sm md:text-base font-bold text-gray-500 mb-1">Pendientes</h3><p id="pending-items" class="text-2xl md:text-3xl font-extrabold text-red-500">0</p></div>
+            </div>
+
+            <div class="sticky-header">
+                <nav id="tabs-container" class="flex flex-wrap md:flex-nowrap items-end border-b-2 border-gray-300 pl-2 pt-1 bg-white rounded-t-lg relative gap-1">
+                    <button id="toggle-header-btn" class="mr-1 mb-1 text-gray-500 hover:text-indigo-600 bg-gray-100 hover:bg-indigo-50 w-10 h-10 rounded-full flex items-center justify-center transition-colors border border-gray-300 shadow-sm" title="Ocultar/Mostrar Encabezado">
+                        <i id="toggle-header-icon" class="fa-solid fa-minus text-base"></i>
+                    </button>
+                    <button data-tab="users" class="tab-btn active"><i class="fa-solid fa-users mr-1"></i>Usuarios</button>
+                    <button data-tab="inventory" class="tab-btn"><i class="fa-solid fa-box-open mr-1"></i>Inventario</button>
+                    <button data-tab="adicionales" class="tab-btn"><i class="fa-solid fa-plus-circle mr-1"></i>Adicionales</button>
+                    
+                    <div class="ml-auto flex flex-wrap items-center gap-2 mb-1 mt-2 md:mt-0 w-full md:w-auto order-last md:order-none justify-end">
+                        <div id="nav-inventory-actions" class="hidden flex gap-2 w-full md:w-auto justify-end">
+                            <button id="nav-ubicado-btn" class="bg-green-500 hover:bg-green-600 text-white w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-colors" title="Asignar Seleccionados"><i class="fa-solid fa-check-double text-base"></i></button>
+                            <button id="nav-desubicar-btn" class="bg-orange-500 hover:bg-orange-600 text-white w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-colors" title="Des-asignar"><i class="fa-solid fa-rotate-left text-base"></i></button>
+                            <button id="nav-bulk-note-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-colors" title="Añadir Nota Masiva"><i class="fa-solid fa-note-sticky text-base"></i></button>
+                            <button id="nav-bulk-photo-btn" class="bg-blue-500 hover:bg-blue-600 text-white w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-colors" title="Añadir Foto Masiva"><i class="fa-solid fa-camera text-base"></i></button>
+                            <button id="nav-qr-scan-btn" class="bg-purple-600 hover:bg-purple-700 text-white w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-colors" title="Escanear QR"><i class="fa-solid fa-qrcode text-base"></i></button>
+                            <button id="nav-clear-search-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-colors" title="Limpiar Filtros"><i class="fa-solid fa-eraser text-base"></i></button>
+                        </div>
+                        <div class="relative w-full md:w-72 mt-2 md:mt-0 flex-grow">
+                            <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm z-10"></i>
+                            <input type="search" inputmode="search" id="global-search-input" placeholder="Buscar..." class="w-full border-2 border-indigo-200 !pl-11 p-3 rounded-xl text-base bg-gray-50 focus:bg-white focus:border-indigo-500 transition-colors shadow-sm outline-none font-bold text-gray-700 relative">
+                        </div>
+                    </div>
+                    <button data-tab="settings" class="tab-btn mr-1 !bg-transparent !border-none hover:text-indigo-600"><i class="fa-solid fa-gear"></i></button>
+                </nav>
+
+                <div id="active-user-banner" class="hidden mt-1 p-2 rounded-b-lg border-l-4 border-green-500 bg-green-50 flex flex-col md:flex-row justify-between items-center gap-2 shadow border border-green-200">
+                    <div class="flex flex-col md:flex-row items-center gap-2 w-full">
+                        <div class="bg-green-100 px-2 py-1 rounded-md border border-green-200 flex items-center gap-1.5">
+                            <span class="text-xs font-bold text-green-700">US:</span>
+                            <span id="active-user-banner-name" class="font-black text-sm text-green-900"></span>
+                            <span class="text-gray-400">|</span>
+                            <span id="active-user-banner-area" class="text-xs font-bold text-green-800 uppercase"></span>
+                        </div>
+                        <div class="flex-1 w-full flex items-center gap-1.5">
+                            <label class="text-xs font-bold text-green-800 whitespace-nowrap"><i class="fa-solid fa-location-dot"></i></label>
+                            <select id="active-user-location-select" class="w-full text-sm rounded-md border border-green-400 p-1 bg-white text-green-900 font-bold shadow-sm"></select>
+                        </div>
+                    </div>
+                    <button id="deactivate-user-btn" class="w-full md:w-auto px-3 py-1 bg-white border border-green-400 rounded-md text-xs font-black text-green-700 hover:bg-green-100 transition-colors whitespace-nowrap"><i class="fa-solid fa-stop mr-1"></i>Terminar</button>
+                </div>
+            </div>
+
+            <div id="main-content-area" class="p-4 md:p-6 rounded-b-2xl rounded-tr-2xl shadow-xl glass-effect border border-t-0 border-gray-300">
+                
+                <div id="users-tab" class="tab-content active">
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        <div class="lg:w-2/5 p-4 md:p-5 border-2 rounded-xl bg-white shadow-sm">
+                            <h3 class="font-extrabold text-xl mb-4 text-indigo-900 border-b pb-2">Registrar Usuario</h3>
+                            <div class="space-y-4">
+                                <div><label class="font-bold text-gray-600 mb-1 block text-sm">Nombre Completo</label><input type="text" id="user-name" list="lista-responsables" class="w-full border p-2.5 rounded-lg text-lg"></div>
+                                <div class="bg-gray-50 p-3 rounded-lg border">
+                                    <label class="font-bold text-gray-600 mb-1 block text-sm">Agregar Ubicación</label>
+                                    <div class="flex flex-col gap-2">
+                                        <select id="user-location-select" class="w-full border p-2 rounded-lg text-base">
+                                            <option value="ARCHIVO">ARCHIVO</option>
+                                            <option value="AREA SECRETARIAL">ÁREA SECRETARIAL</option>
+                                            <option value="BODEGA">BODEGA</option>
+                                            <option value="CABALLERIZA">CABALLERIZA</option>
+                                            <option value="CUBICULO">CUBÍCULO</option>
+                                            <option value="FOTOCOPIADO">FOTOCOPIADO</option>
+                                            <option value="MODULO">MÓDULO</option>
+                                            <option value="OFICINA">OFICINA</option>
+                                            <option value="PAPELERIA">PAPELERÍA</option>
+                                            <option value="PASILLO">PASILLO</option>
+                                            <option value="RECEPCION">RECEPCIÓN</option>
+                                            <option value="SALA DE ESPERA">SALA DE ESPERA</option>
+                                            <option value="SALA DE JUNTAS">SALA DE JUNTAS</option>
+                                            <option value="SITE">SITE</option>
+                                            <option value="OTRA">Otra (manual)...</option>
+                                        </select>
+                                        <input type="text" id="user-location-manual" class="hidden w-full border p-2 rounded-lg text-base" placeholder="Escribir...">
+                                        <button id="add-location-btn" class="w-full py-3 bg-green-500 text-white rounded-xl text-base font-bold shadow-sm"><i class="fa-solid fa-plus mr-1"></i>Añadir a lista</button>
+                                    </div>
+                                </div>
+                                <div id="new-user-locations-list" class="flex flex-wrap gap-1.5 p-3 bg-white min-h-[4rem] border border-dashed rounded-lg"></div>
+                                <div><label class="font-bold text-gray-600 mb-1 block text-sm">Área Base</label><select id="user-area-select" class="w-full border p-2.5 rounded-lg text-lg"></select></div>
+                                <button id="create-user-btn" class="w-full py-4 mt-2 bg-indigo-600 text-white rounded-xl font-bold text-lg shadow-md"><i class="fa-solid fa-user-plus mr-1"></i>Crear Usuario</button>
+                            </div>
+                        </div>
+                        <div class="lg:w-3/5 p-4 md:p-5 border-2 rounded-xl bg-white shadow-sm flex flex-col">
+                            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                <h3 class="font-extrabold text-xl text-indigo-900">Directorio</h3>
+                                <span id="user-count-badge" class="px-3 py-0.5 bg-indigo-100 text-indigo-800 rounded-full font-bold text-sm"></span>
+                            </div>
+                            <div id="registered-users-list" class="space-y-3 flex-grow overflow-y-auto pr-2" style="max-height: 600px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="inventory-tab" class="tab-content">
+                    <div class="bg-white p-3 md:p-4 rounded-xl border-2 shadow-sm mb-3">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-2">
+                            <div class="flex items-center flex-wrap gap-2 w-full">
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Últimos:</span>
+                                <div id="search-history-container" class="flex gap-1.5 flex-wrap"></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                            <select id="status-filter" class="border p-2 rounded-lg text-sm font-medium bg-gray-50"><option value="all">Todos los estados</option><option value="SI">Ubicados / Adic.</option><option value="NO">Pendientes</option></select>
+                            <select id="area-filter-inventory" class="border p-2 rounded-lg text-sm font-medium bg-gray-50"><option value="all">Todas las áreas</option></select>
+                            <select id="book-type-filter" class="border p-2 rounded-lg text-sm font-medium bg-gray-50"><option value="all">Todos los tipos</option></select>
+                        </div>
+                    </div>
+                    
+                    <div class="inventory-table-container bg-white border-2 rounded-xl shadow-sm overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-3 py-3 text-center w-12"><input type="checkbox" id="select-all-checkbox"></th>
+                                    <th class="px-3 py-3 text-left font-bold text-gray-600 uppercase tracking-wider text-xs">Información del Bien</th>
+                                    <th class="px-3 py-3 text-left font-bold text-gray-600 uppercase tracking-wider text-xs">Identificación</th>
+                                    <th class="px-3 py-3 text-left font-bold text-gray-600 uppercase tracking-wider text-xs">Asignación</th>
+                                    <th class="px-3 py-3 text-center font-bold text-gray-600 uppercase tracking-wider text-xs">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table-body" class="divide-y divide-gray-200 text-base"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mt-4 bg-white p-3 rounded-xl border-2">
+                        <button id="prev-page-btn" class="px-5 py-3 bg-indigo-50 text-indigo-700 font-bold rounded-xl border border-indigo-200 text-sm">Anterior</button>
+                        <span id="page-info" class="font-bold text-base text-gray-600"></span>
+                        <button id="next-page-btn" class="px-5 py-3 bg-indigo-50 text-indigo-700 font-bold rounded-xl border border-indigo-200 text-sm">Siguiente</button>
+                    </div>
+                </div>
+
+                <div id="adicionales-tab" class="tab-content">
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        <div class="lg:w-2/5 p-4 md:p-5 border-2 rounded-xl bg-white shadow-sm">
+                            <h3 class="font-extrabold text-xl mb-4 text-indigo-900 border-b pb-2">Registrar Adicional</h3>
+                            <form id="adicional-form" class="space-y-3">
+                                <div><label class="font-bold text-gray-600 block mb-1 text-sm">Clave Asignada</label><input type="text" id="ad-clave" name="clave" class="w-full border p-2.5 rounded-lg text-lg bg-gray-50"></div>
+                                
+                                <div class="flex gap-2 items-end">
+                                    <div class="flex-grow">
+                                        <label class="font-bold text-gray-600 block mb-1 text-sm">Serie</label>
+                                        <input type="text" id="ad-serie" name="serie" class="w-full border p-2.5 rounded-lg text-lg border-blue-400 bg-blue-50" placeholder="Escanea la serie aquí...">
+                                    </div>
+                                    <button type="button" id="autofill-serie-btn" class="py-3 px-4 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition-colors shadow-sm mb-[2px]" title="Autocompletar Inteligente">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                    </button>
+                                </div>
+                                <div id="serie-warning" class="hidden text-red-600 font-bold mt-1.5 text-xs bg-red-50 p-2 rounded border border-red-200"></div>
+
+                                <div><label class="font-bold text-gray-600 block mb-1 text-sm">Descripción *</label><input type="text" id="ad-desc" name="descripcion" list="lista-descripciones" class="w-full border p-2.5 rounded-lg text-lg"></div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div><label class="font-bold text-gray-600 block mb-1 text-sm">Marca</label><input type="text" id="ad-marca" name="marca" list="lista-marcas" class="w-full border p-2.5 rounded-lg text-lg"></div>
+                                    <div><label class="font-bold text-gray-600 block mb-1 text-sm">Modelo</label><input type="text" id="ad-modelo" name="modelo" list="lista-modelos" class="w-full border p-2.5 rounded-lg text-lg"></div>
+                                </div>
+                                
+                                <div>
+                                    <label class="font-bold text-gray-600 block mb-1 text-sm">Posesión</label>
+                                    <select id="ad-posesion" name="posesion" class="w-full border p-2.5 rounded-lg text-lg">
+                                        <option value="Cámara">Cámara</option>
+                                        <option value="Arrendamiento">Arrendamiento</option>
+                                        <option value="Propiedad del Grupo">Propiedad del Grupo</option>
+                                    </select>
+                                </div>
+
+                                <div id="contenedor-contrato" class="hidden mt-2">
+                                    <label class="font-bold text-blue-800 block mb-1 text-sm"><i class="fa-solid fa-file-signature mr-1"></i>Número de Contrato</label>
+                                    <input type="text" id="ad-num-contrato" class="w-full border-2 border-blue-300 bg-blue-50 p-2.5 rounded-lg text-lg font-mono font-bold" value="LXVIDG AJ- 070/2024">
+                                </div>
+
+                                <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200 mt-2">
+                                    <label class="font-bold text-yellow-800 text-sm block mb-2"><i class="fa-solid fa-user-shield mr-1"></i>¿Es un bien Personal?</label>
+                                    <div class="flex gap-4 pl-1">
+                                        <label class="flex items-center text-sm cursor-pointer font-bold"><input type="radio" name="personal" value="Si" class="mr-2"> Sí</label>
+                                        <label class="flex items-center text-sm cursor-pointer font-bold"><input type="radio" name="personal" value="No" checked class="mr-2"> No</label>
+                                    </div>
+                                </div>
+                                <button type="button" id="add-adicional-btn" class="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold text-lg mt-3 shadow-md"><i class="fa-solid fa-plus-circle mr-1"></i>Añadir a lista</button>
+                            </form>
+                        </div>
+                        <div class="lg:w-3/5 p-4 md:p-5 border-2 rounded-xl bg-white shadow-sm flex flex-col">
+                            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                <h3 class="font-extrabold text-xl text-indigo-900">Bienes Registrados</h3>
+                                <div class="flex items-center gap-2">
+                                    <button id="ad-bulk-autofill-btn" class="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-blue-600 transition-colors" title="Escanear y autocompletar todas las series en la lista">
+                                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Autocompletar Todo
+                                    </button>
+                                    <span id="additional-items-total" class="px-3 py-0.5 bg-indigo-100 text-indigo-800 rounded-full font-bold text-sm"></span>
+                                </div>
+                            </div>
+                            <div class="flex gap-3 mb-4">
+                                <select id="ad-area-filter" class="border p-2.5 rounded-lg text-sm w-1/2 bg-gray-50"></select>
+                                <select id="ad-user-filter" class="border p-2.5 rounded-lg text-sm w-1/2 bg-gray-50"><option value="all">Todos los usuarios</option></select>
+                            </div>
+                            <div id="adicionales-list" class="space-y-3 flex-grow overflow-y-auto pr-2" style="max-height: 700px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="settings-tab" class="tab-content">
+                    <div class="max-w-4xl mx-auto p-6 md:p-8 bg-white border-2 rounded-2xl shadow-xl">
+                        <div class="text-center mb-8">
+                            <i class="fa-solid fa-shield-halved text-5xl text-indigo-500 mb-3"></i>
+                            <h4 class="text-2xl font-extrabold text-indigo-900">Respaldo y Recuperación</h4>
+                            <p class="text-lg text-gray-500 mt-1">Exporta, combina o limpia datos de tu tableta.</p>
+                            <p class="text-sm text-green-600 font-bold mt-2"><i class="fa-solid fa-check-circle"></i> Compatible con Edición Avanzada (Escritorio)</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <button id="export-session-btn" class="py-5 bg-blue-500 text-white rounded-xl font-bold text-xl shadow-md hover:bg-blue-600 transition-transform hover:-translate-y-1"><i class="fa-solid fa-file-zipper block text-3xl mb-2"></i>1. Exportar ZIP</button>
+                            <button id="import-session-btn" class="py-5 bg-green-600 text-white rounded-xl font-bold text-xl shadow-md hover:bg-green-700 transition-transform hover:-translate-y-1"><i class="fa-solid fa-upload block text-3xl mb-2"></i>2. Restaurar ZIP</button>
+                            <input type="file" id="import-file-input" class="hidden" accept=".zip">
+                            
+                            <button id="merge-session-btn" class="md:col-span-2 py-5 bg-purple-600 text-white rounded-xl font-bold text-xl shadow-md hover:bg-purple-700 transition-transform hover:-translate-y-1"><i class="fa-solid fa-code-merge block text-3xl mb-2"></i>3. Fusionar Sesión ZIP</button>
+                            <input type="file" id="merge-file-input" class="hidden" accept=".zip">
+
+                            <button id="clear-session-btn" class="md:col-span-2 py-5 bg-red-600 text-white rounded-xl font-bold text-xl shadow-md hover:bg-red-700 transition-transform hover:-translate-y-1 mt-6 border-4 border-red-300"><i class="fa-solid fa-trash-can block text-3xl mb-2"></i>4. Borrar Toda la Sesión</button>
+                        </div>
+
+                        <div class="mt-10 border-t-2 pt-8">
+                            <h4 class="text-2xl font-extrabold text-indigo-900 mb-4"><i class="fa-solid fa-users-viewfinder mr-2"></i>Responsables de Área Identificados</h4>
+                            <div id="settings-responsables-list" class="space-y-3 grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast-container" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[1001] space-y-2 flex flex-col items-center pointer-events-none"></div>
+
+<script>
+// Registro del Service Worker para la PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('Service Worker registrado:', reg.scope))
+      .catch(err => console.log('Error registrando Service Worker:', err));
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const toggleHeaderBtn = document.getElementById('toggle-header-btn');
+    if(toggleHeaderBtn) {
+        toggleHeaderBtn.onclick = () => {
+            const header = document.getElementById('main-header');
+            const dash = document.getElementById('dashboard-stats');
+            const icon = document.getElementById('toggle-header-icon');
+            
+            header.classList.toggle('hidden');
+            dash.classList.toggle('hidden');
+            
+            if(header.classList.contains('hidden')) {
+                icon.classList.remove('fa-minus');
+                icon.classList.add('fa-plus');
+                showToast('Modo de enfoque activado', 'info');
+            } else {
+                icon.classList.remove('fa-plus');
+                icon.classList.add('fa-minus');
+            }
+        };
+    }
+
+    // ==========================================
+    // ATAJO DE TECLADO ENTER GLOBAL (v8.13)
+    // ==========================================
+    document.addEventListener('keydown', e => {
+        if(e.key === 'Enter') {
+            if(!document.getElementById('login-page').classList.contains('hidden')) {
+                e.preventDefault();
+                document.getElementById('employee-login-btn').click();
+            } 
+            else if (document.getElementById('confirmation-modal').classList.contains('show')) {
+                e.preventDefault();
+                document.getElementById('modal-confirm').click();
+            } 
+            else if (document.getElementById('conflict-modal').classList.contains('show')) {
+                e.preventDefault();
+                document.getElementById('resolve-conflicts-btn').click();
+            }
+        }
+    });
+
+});
+
+const NOMBRES_AREAS = {
+    "131100": "Dirección de Almacén e Inventarios",
+    "131000": "Dirección de Almacén e Inventarios",
+    "1": "Dirección General",
+    "2": "Finanzas",
+    "3": "Recursos Humanos",
+    "4": "Operaciones",
+    "5": "Sistemas",
+    "CONTRATO": "Arrendamiento"
+};
+
+// ==========================================
+// PERFILES MÁGICOS LIMITADOS A ARRENDAMIENTO Y CÁMARA
+// ==========================================
+const perfilesMagicos = [
+    { regex: /^MZ01/i, desc: 'CPU', marca: 'LENOVO', modelo: '12T9', posesion: 'Arrendamiento' },
+    { regex: /^VR00/i, desc: 'MONITOR', marca: 'LENOVO', modelo: 'S22I-30', posesion: 'Arrendamiento' },
+    { regex: /^8SSD51/i, desc: 'TECLADO', marca: 'LENOVO', modelo: 'KU1601', posesion: 'Arrendamiento' },
+    { regex: /^8SSM51/i, desc: 'MOUSE', marca: 'LENOVO', modelo: 'MOJUUO', posesion: 'Arrendamiento' },
+    { regex: /^PF[A-Z0-9]{6}/i, desc: 'LAPTOP', marca: 'LENOVO', modelo: 'THINKPAD', posesion: 'Arrendamiento' },
+    { regex: /^12240/i, desc: 'REGULADOR DE VOLTAJE', marca: 'SMARTBITT', modelo: 'SBNB500', posesion: 'Arrendamiento' },
+    { regex: /^22WZ/i, desc: 'TELÉFONO', marca: 'AVAYA', modelo: 'VANTAGE 12', posesion: 'Cámara' },
+    { regex: /^17WZ[A-Z0-9]{8,}/i, desc: 'TELÉFONO', marca: 'AVAYA', modelo: '9611G', posesion: 'Cámara' }
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+    let state = {
+        loggedIn: false, currentUser: null, inventory: [], additionalItems: [],
+        resguardantes: [], activeResguardante: null, locations: {}, areas: [], areaNames: {},
+        responsablesList: [], 
+        additionalPhotos: {}, locationPhotos: {}, notes: {}, photos: {}, userPhotos: {}, serialNumberCache: new Set(),
+        suggestedNames: []
+    };
+    
+    let tempUserLocations = []; 
+    let searchHistory = [];
+    let cameraStream = null;
+    let html5QrCode = null;
+
+    function focusSearch() {
+        const input = document.getElementById('global-search-input');
+        if(input && !input.disabled) {
+            input.focus();
+            input.select();
+            setTimeout(() => { input.focus(); input.select(); }, 150);
+        }
+    }
+
+    window.copyRespText = (text) => {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('Nombre copiado al portapapeles', 'success');
+        }).catch(() => showToast('Error al copiar', 'error'));
+    };
+
+    function escapeHTML(str) { return String(str||'').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
+    function generateUUID() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); }
+    
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `px-6 py-3 rounded-xl text-white shadow-xl font-bold text-lg mb-2 transition-all transform pointer-events-auto ${type==='error'?'bg-red-600':type==='warning'?'bg-yellow-500':'bg-gray-800'}`;
+        toast.innerHTML = `<i class="fa-solid ${type==='error'?'fa-circle-exclamation':'fa-circle-check'} mr-2"></i> ${message}`;
+        document.getElementById('toast-container').appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 4000);
+    }
+
+    const photoDB = {
+        db: null,
+        init: () => new Promise((res, rej) => {
+            const req = indexedDB.open('InventarioProPhotosDB', 2); 
+            req.onupgradeneeded = e => { 
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos'); 
+                if (!db.objectStoreNames.contains('layoutImages')) db.createObjectStore('layoutImages');
+            };
+            req.onsuccess = e => { photoDB.db = e.target.result; res(); };
+            req.onerror = e => rej(e.target.errorCode);
+        }),
+        setItem: (store, key, val) => new Promise((res, rej) => { 
+            if (!photoDB.db.objectStoreNames.contains(store)) return res(); 
+            const req = photoDB.db.transaction([store], 'readwrite').objectStore(store).put(val, key); 
+            req.onsuccess = res; req.onerror = rej; 
+        }),
+        getItem: (store, key) => new Promise((res, rej) => { 
+            if (!photoDB.db.objectStoreNames.contains(store)) return res(null);
+            const req = photoDB.db.transaction([store], 'readonly').objectStore(store).get(key); 
+            req.onsuccess = () => res(req.result); req.onerror = rej; 
+        }),
+        getAllItems: (store) => new Promise((res, rej) => {
+            if (!photoDB.db.objectStoreNames.contains(store)) return res([]);
+            const tx = photoDB.db.transaction([store], 'readonly').objectStore(store);
+            const kReq = tx.getAllKeys(), vReq = tx.getAll();
+            Promise.all([new Promise(r=>kReq.onsuccess=()=>r(kReq.result)), new Promise(r=>vReq.onsuccess=()=>r(vReq.result))])
+                .then(([keys, vals]) => res(keys.map((k,i) => ({key: k, value: vals[i]}))))
+                .catch(() => res([]));
+        })
+    };
+
+    function recalculateLocationCounts() {
+        state.locations = {};
+        state.resguardantes.forEach(user => {
+            let locs = user.locations?.length ? user.locations : [user.locationWithId];
+            locs.forEach(loc => { if(!loc) return; let base = (loc.match(/^(.*?)\s*(\d+)$/) ? RegExp.$1 : loc).trim().toUpperCase(); state.locations[base] = (state.locations[base] || 0) + 1; });
+        });
+    }
+
+    function saveState() {
+        const s = {...state}; delete s.serialNumberCache;
+        localStorage.setItem('inventarioProState', JSON.stringify(s));
+        updateDatalists();
+    }
+
+    function showConfirm(title, text, onConfirm) {
+        document.getElementById('modal-title').textContent = title; document.getElementById('modal-text').textContent = text;
+        document.getElementById('confirmation-modal').classList.add('show');
+        document.getElementById('modal-confirm').onclick = () => { onConfirm(); document.getElementById('confirmation-modal').classList.remove('show'); };
+        document.getElementById('modal-cancel').onclick = () => document.getElementById('confirmation-modal').classList.remove('show');
+    }
+    
+    // ==========================================
+    // CAMARA ROBUSTA Y VELOZ (v8.14)
+    // ==========================================
+    async function startCamera() {
+        stopCamera(); 
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            const videoEl = document.getElementById('camera-stream');
+            videoEl.srcObject = cameraStream;
+            videoEl.setAttribute('playsinline', true);
+            await videoEl.play().catch(e => console.error("Play error:", e));
+        } catch (err) {
+            showToast('No se pudo acceder a la cámara. Revisa permisos.', 'error');
+        }
+    }
+
+    function stopCamera() {
+        if(cameraStream) { 
+            cameraStream.getTracks().forEach(t => t.stop()); 
+            cameraStream = null; 
+        }
+        const videoEl = document.getElementById('camera-stream');
+        if(videoEl) {
+            videoEl.pause();
+            videoEl.srcObject = null;
+        }
+    }
+
+    document.getElementById('logout-btn').onclick = () => {
+        state.loggedIn = false; state.currentUser = null; saveState(); location.reload();
+    };
+
+    function updateHeaderArea() {
+        const areasLoaded = Object.keys(state.areaNames || {}).sort();
+        const infoDiv = document.getElementById('header-area-info');
+        const progSpan = document.getElementById('header-progress');
+
+        if(areasLoaded.length > 0) {
+            const baseArea = areasLoaded[0]; 
+            infoDiv.textContent = `Área Base: ${baseArea} - ${state.areaNames[baseArea]}`;
+            infoDiv.classList.remove('hidden');
+        } else {
+            infoDiv.classList.add('hidden');
+        }
+
+        if (state.inventory && state.inventory.length > 0) {
+            const ubicados = state.inventory.filter(i => i.UBICADO === 'SI').length;
+            const pct = Math.round((ubicados / state.inventory.length) * 100) || 0;
+            if(progSpan) {
+                progSpan.innerHTML = `<i class="fa-solid fa-chart-pie mr-1"></i> ${pct}% Auditado`;
+                progSpan.classList.remove('hidden');
+            }
+        } else if(progSpan) {
+            progSpan.classList.add('hidden');
+        }
+    }
+
+    function renderResponsablesSettings() {
+        const container = document.getElementById('settings-responsables-list');
+        if(!state.responsablesList || state.responsablesList.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 italic md:col-span-2">No se han identificado responsables en los archivos cargados.</p>';
+            return;
+        }
+        container.innerHTML = state.responsablesList.map((r) => `
+            <div class="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <div class="flex-1 pr-2">
+                    <p class="font-bold text-indigo-900 text-xs mb-1 uppercase tracking-wide">ÁREA ${r.area} ${r.areaName ? '- ' + r.areaName : ''}</p>
+                    <p class="font-black text-gray-800 text-lg leading-tight">${r.name}</p>
+                    <p class="text-sm text-gray-500 font-medium">${r.title}</p>
+                </div>
+                <button class="px-4 py-3 bg-indigo-100 text-indigo-700 font-bold rounded-xl hover:bg-indigo-200 transition-colors shadow-sm" onclick="copyRespText('${escapeHTML(r.name)}')">
+                    <i class="fa-regular fa-copy"></i> Copiar
+                </button>
+            </div>
+        `).join('');
+    }
+
+    document.getElementById('upload-btn').onclick = () => document.getElementById('file-input').click();
+    document.getElementById('file-input').onchange = async e => {
+        const files = e.target.files;
+        if(!files.length) return;
+        
+        document.getElementById('loading-overlay').classList.add('show');
+        document.getElementById('loading-text').textContent = `Procesando ${files.length} archivo(s)...`;
+
+        let totalLoaded = 0;
+        let totalDuplicates = 0;
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            
+            await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    try {
+                        const wb = XLSX.read(ev.target.result, {type: 'binary'});
+                        const sheet = wb.Sheets[wb.SheetNames[0]];
+                        const allRows = XLSX.utils.sheet_to_json(sheet, {header:1, defval: ''});
+                        const raw = XLSX.utils.sheet_to_json(sheet, {header:1, range:11});
+                        
+                        const sheetDataTop = allRows.slice(0, 15);
+                        let areaId = 'Sin Área', areaName = '', tipoLibro = sheet['B7']?.v || sheet['L7']?.v || 'Sin Tipo', foundResponsables = [];
+
+                        sheetDataTop.forEach(row => {
+                            row.forEach(cell => {
+                                if(typeof cell === 'string') {
+                                    const matchArea = cell.match(/AREA\s+(\d+)[-\s:]+([a-zA-ZÁÉÍÓÚáéíóúÑñ\s]+)/i);
+                                    if(matchArea && areaId === 'Sin Área') {
+                                        areaId = matchArea[1]; areaName = matchArea[2].trim();
+                                    } else if (cell.match(/AREA\s+(\d+)/i) && areaId === 'Sin Área') {
+                                        areaId = cell.match(/AREA\s+(\d+)/i)[1];
+                                    }
+                                }
+                            });
+                        });
+
+                        const bottomRows = allRows.slice(-40);
+                        let foundRespKeyword = false;
+                        let capturedName = "";
+                        let capturedTitle = "";
+
+                        for (let j = 0; j < bottomRows.length; j++) {
+                            if (!bottomRows[j]) continue;
+                            let valB = String(bottomRows[j][1] || '').trim();
+                            
+                            if (!foundRespKeyword) {
+                                if (/^(NOMBRE|RESPONSABLE|TITULAR|RECIBE)/i.test(valB)) {
+                                    foundRespKeyword = true;
+                                    let cleanVal = valB.replace(/^(NOMBRE|RESPONSABLE|TITULAR|RECIBE)/i, '').replace(/^[:\s-]+/, '').trim();
+                                    if (cleanVal && !/^_+$/.test(cleanVal)) capturedName = cleanVal;
+                                }
+                            } else {
+                                if (valB && !/^_+$/.test(valB) && !/hoja\s*\d/i.test(valB)) {
+                                    if (!capturedName) capturedName = valB;
+                                    else if (!capturedTitle) { capturedTitle = valB; break; }
+                                }
+                            }
+                        }
+
+                        if (capturedName && areaId !== 'Sin Área') {
+                            if(!state.responsablesList) state.responsablesList = [];
+                            const existing = state.responsablesList.find(r => r.area === areaId);
+                            if(!existing) {
+                                state.responsablesList.push({area: areaId, areaName: areaName, name: capturedName, title: capturedTitle});
+                            } else {
+                                existing.name = capturedName;
+                                existing.title = capturedTitle;
+                            }
+                            foundResponsables.push(capturedName);
+                        }
+
+                        if(areaName && areaId !== 'Sin Área') {
+                            state.areaNames = state.areaNames || {};
+                            state.areaNames[areaId] = areaName;
+                            NOMBRES_AREAS[areaId] = areaName;
+                        }
+
+                        state.suggestedNames = [...new Set([...(state.suggestedNames||[]), ...foundResponsables])];
+                        
+                        let fileLoaded = 0;
+                        let fileDupes = 0;
+
+                        const newItems = raw.map(row => {
+                            const c = String(row[0]||'').trim();
+                            if(/^(?:\d{5,6}|0\.\d+)$/.test(c)) {
+                                if (state.inventory.some(item => item['CLAVE UNICA'] === c)) {
+                                    fileDupes++;
+                                    return null;
+                                }
+                                fileLoaded++;
+                                return {
+                                    'CLAVE UNICA': c, 'DESCRIPCION': String(row[1]||''), 'MARCA': row[4]||'', 'MODELO': row[5]||'', 'SERIE': row[6]||'',
+                                    'NOMBRE DE USUARIO': '', 'UBICADO': 'NO', 'RE_ETIQUETADO': 'NO', 'areaOriginal': areaId, 'listadoOriginal': tipoLibro
+                                }; 
+                            }
+                            return null;
+                        }).filter(Boolean);
+                        
+                        state.inventory = state.inventory.concat(newItems);
+                        totalLoaded += fileLoaded;
+                        totalDuplicates += fileDupes;
+                        
+                    } catch(err) { console.error(`Error leyendo el archivo ${file.name}`, err); }
+                    resolve();
+                };
+                reader.readAsBinaryString(file);
+            });
+        }
+        
+        saveState(); 
+        populateFilters(); 
+        renderDashboard(); 
+        filterAndRenderInventory();
+        updateHeaderArea();
+        
+        document.getElementById('loading-overlay').classList.remove('show');
+        
+        if (totalDuplicates > 0) {
+            showToast(`Cargados: ${totalLoaded}. Omitidos (ya existían): ${totalDuplicates}`, 'info');
+        } else if (totalLoaded > 0) {
+            showToast(`Se cargaron ${totalLoaded} bienes con éxito.`, 'success');
+        } else {
+            showToast('No se cargaron bienes nuevos.', 'warning');
+        }
+        
+        e.target.value = '';
+    };
+
+    function changeTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`${tab}-tab`).classList.add('active');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+        
+        const globalSearch = document.getElementById('global-search-input');
+        globalSearch.value = ''; 
+        const invActions = document.getElementById('nav-inventory-actions');
+        
+        if (tab === 'users') { globalSearch.placeholder = 'Buscar usuario...'; globalSearch.disabled = false; invActions.classList.add('hidden'); }
+        else if (tab === 'inventory') { globalSearch.placeholder = 'CLAVE, serie o desc...'; globalSearch.disabled = false; invActions.classList.remove('hidden'); }
+        else if (tab === 'adicionales') { globalSearch.placeholder = 'Buscar adicional...'; globalSearch.disabled = false; invActions.classList.add('hidden'); }
+        else if (tab === 'settings') { 
+            globalSearch.placeholder = 'No disponible aquí'; 
+            globalSearch.disabled = true; 
+            invActions.classList.add('hidden');
+            renderResponsablesSettings();
+        }
+
+        updateBanner();
+        if(tab==='inventory') filterAndRenderInventory();
+        if(tab==='users') renderUsers();
+        if(tab==='adicionales') { populateFilters(); renderAdicionales(); }
+        
+        focusSearch();
+    }
+    
+    document.getElementById('tabs-container').onclick = e => { 
+        if(e.target.closest('#toggle-header-btn') || e.target.closest('#nav-inventory-actions') || e.target.closest('#global-search-input')) return; 
+        const btn = e.target.closest('.tab-btn'); 
+        if(btn) { changeTab(btn.dataset.tab); window.scrollTo(0,0); } 
+    };
+
+    document.getElementById('global-search-input').addEventListener('input', (e) => {
+        const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+        const term = e.target.value.trim().toUpperCase();
+        
+        if (activeTab === 'users') { renderUsers(); } 
+        else if (activeTab === 'inventory') {
+            const exactMatchInv = state.inventory.find(i => String(i['CLAVE UNICA']).toUpperCase() === term);
+            const exactMatchAdic = state.additionalItems.find(a => String(a.claveAsignada).toUpperCase() === term);
+            if (term !== '') { if (exactMatchInv) showInvDetail(exactMatchInv['CLAVE UNICA']); else if (exactMatchAdic) showAdicDetail(exactMatchAdic.id); }
+            currentPage = 1; filterAndRenderInventory();
+        } else if (activeTab === 'adicionales') { renderAdicionales(); }
+    });
+
+    function renderDashboard() {
+        document.getElementById('total-items').textContent = state.inventory.length;
+        document.getElementById('located-items').textContent = state.inventory.filter(i=>i.UBICADO==='SI').length;
+        document.getElementById('pending-items').textContent = state.inventory.filter(i=>i.UBICADO!=='SI').length;
+        updateHeaderArea();
+    }
+
+    function populateFilters() {
+        const areas = [...new Set([...state.inventory.map(i=>i.areaOriginal), ...state.resguardantes.map(u=>u.area)])].sort();
+        const opts = '<option value="all">Todas las áreas</option>' + areas.map(a => `<option value="${a}">Área ${a} - ${NOMBRES_AREAS[a]||''}</option>`).join('');
+        document.getElementById('area-filter-inventory').innerHTML = opts; document.getElementById('ad-area-filter').innerHTML = opts;
+        document.getElementById('user-area-select').innerHTML = '<option value="">Seleccione un área...</option>' + areas.map(a => `<option value="${a}">Área ${a} - ${NOMBRES_AREAS[a]||''}</option>`).join('');
+        document.getElementById('edit-user-area').innerHTML = opts; document.getElementById('ad-user-filter').innerHTML = '<option value="all">Todos los usuarios</option>' + state.resguardantes.map(u => `<option value="${u.name}">${u.name}</option>`).join('');
+        const bookTypes = [...new Set(state.inventory.map(i => i.listadoOriginal))].filter(Boolean).sort();
+        document.getElementById('book-type-filter').innerHTML = '<option value="all">Todos los tipos de libro</option>' + bookTypes.map(t => `<option value="${t}">${t}</option>`).join('');
+    }
+
+    function renderLocChips(container, arr) { container.innerHTML = arr.length ? arr.map((l,i) => `<span class="location-chip">${l} <i class="fa-solid fa-circle-xmark cursor-pointer text-indigo-300 hover:text-indigo-600 rm-loc" data-idx="${i}"></i></span>`).join('') : '<p class="text-gray-400 p-1 text-sm font-medium">Ninguna ubicación añadida.</p>'; }
+    
+    document.getElementById('add-location-btn').onclick = () => {
+        const t = document.getElementById('user-location-select').value; 
+        const m = document.getElementById('user-location-manual').value.trim();
+        const base = (t === 'OTRA' ? m : t).trim().toUpperCase(); 
+        if (!base) return;
+
+        let maxNum = 0;
+        const checkMax = loc => { 
+            const match = loc.match(/^(.*?)\s+(\d+)$/); 
+            if(match && match[1].trim().toUpperCase() === base) { 
+                const num = parseInt(match[2], 10); 
+                if(num > maxNum) maxNum = num; 
+            } 
+        };
+        
+        state.resguardantes.forEach(u => (u.locations||[]).forEach(checkMax)); 
+        tempUserLocations.forEach(checkMax);
+
+        tempUserLocations.push(`${base} ${String(maxNum + 1).padStart(2, '0')}`); 
+        renderLocChips(document.getElementById('new-user-locations-list'), tempUserLocations);
+    };
+
+    document.getElementById('user-location-select').onchange = e => { document.getElementById('user-location-manual').classList.toggle('hidden', e.target.value !== 'OTRA'); };
+    document.getElementById('new-user-locations-list').onclick = e => { if(e.target.classList.contains('rm-loc')) { tempUserLocations.splice(e.target.dataset.idx,1); renderLocChips(document.getElementById('new-user-locations-list'), tempUserLocations); }};
+    
+    let tempEditUserLocations = [];
+    document.getElementById('edit-add-location-btn').onclick = () => {
+        const t = document.getElementById('edit-user-location-type').value; 
+        const m = document.getElementById('edit-user-location-manual').value.trim();
+        const base = (t === 'OTRA' ? m : t).trim().toUpperCase(); 
+        if (!base) return;
+
+        let maxNum = 0;
+        const checkMax = loc => { 
+            const match = loc.match(/^(.*?)\s+(\d+)$/); 
+            if(match && match[1].trim().toUpperCase() === base) { 
+                const num = parseInt(match[2], 10); 
+                if(num > maxNum) maxNum = num; 
+            } 
+        };
+        
+        state.resguardantes.forEach(u => (u.locations||[]).forEach(checkMax)); 
+        tempEditUserLocations.forEach(checkMax);
+
+        tempEditUserLocations.push(`${base} ${String(maxNum + 1).padStart(2, '0')}`); 
+        renderLocChips(document.getElementById('edit-user-locations-list'), tempEditUserLocations);
+    };
+
+    document.getElementById('edit-user-location-type').onchange = e => { document.getElementById('edit-user-location-manual').classList.toggle('hidden', e.target.value !== 'OTRA'); };
+    document.getElementById('edit-user-locations-list').onclick = e => { if(e.target.classList.contains('rm-loc')) { tempEditUserLocations.splice(e.target.dataset.idx,1); renderLocChips(document.getElementById('edit-user-locations-list'), tempEditUserLocations); }};
+    
+    document.getElementById('create-user-btn').onclick = () => {
+        const n = document.getElementById('user-name').value.trim(); const a = document.getElementById('user-area-select').value;
+        if(!n || !a || !tempUserLocations.length) return showToast('Completa nombre, área y al menos una ubicación','error');
+        const u = {id: generateUUID(), name:n, area:a, locationWithId: tempUserLocations[0], locations: [...tempUserLocations]};
+        state.resguardantes.push(u); state.activeResguardante = u; recalculateLocationCounts(); 
+        state.suggestedNames = [...new Set([...(state.suggestedNames||[]), n])]; 
+        saveState(); renderUsers(); updateBanner(); populateFilters();
+        document.getElementById('user-name').value=''; tempUserLocations=[]; renderLocChips(document.getElementById('new-user-locations-list'), []); showToast(`Usuario ${n} creado y activado.`);
+        focusSearch();
+    };
+
+    function renderUsers() {
+        const term = document.getElementById('global-search-input').value.toLowerCase();
+        const list = document.getElementById('registered-users-list');
+        const filtered = state.resguardantes.filter(u => u.name.toLowerCase().includes(term) || (u.locations||[]).join(' ').toLowerCase().includes(term));
+        document.getElementById('user-count-badge').textContent = filtered.length;
+        
+        list.innerHTML = filtered.map(u => {
+            const nombreArea = NOMBRES_AREAS[u.area] || 'Área Desconocida';
+            const isActive = state.activeResguardante?.id === u.id;
+            const btnClass = isActive ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300';
+            const btnText = isActive ? '<i class="fa-solid fa-user-check mr-1"></i>Activo' : 'Activar';
+            
+            return `
+            <div class="flex flex-col md:flex-row justify-between items-center p-3 border rounded-xl bg-white shadow-sm mb-2 ${isActive ? 'border-green-500 bg-green-50 ring-2 ring-green-200' : ''}">
+                <div class="cursor-pointer mb-2 md:mb-0 w-full md:flex-1 min-w-0 pr-2" onclick="showUserDetail('${u.id}')">
+                    <p class="font-bold text-base text-gray-800 truncate" title="${u.name}">${u.name}</p>
+                    <p class="text-sm text-gray-500 font-medium leading-tight truncate"><i class="fa-solid fa-briefcase mr-1"></i>Área ${u.area} - ${nombreArea}</p>
+                    <p class="text-xs text-gray-400 font-medium leading-tight"><i class="fa-solid fa-location-dot mr-1"></i>${(u.locations||[]).length} Ubicaciones</p>
+                </div>
+                <div class="flex flex-shrink-0 flex-wrap gap-2 w-full md:w-auto grid grid-cols-4 md:flex">
+                    <button class="w-full md:w-auto py-2 px-3 ${btnClass} font-bold rounded-xl text-sm shadow-sm transition-colors" onclick="activateUser('${u.id}')">${btnText}</button>
+                    <button class="w-full md:w-auto py-2 px-3 bg-blue-100 text-blue-700 font-bold rounded-xl text-sm transition-colors hover:bg-blue-200" title="Foto" onclick="showPhoto('user', '${u.id}')"><i class="fa-solid fa-camera"></i></button>
+                    <button class="w-full md:w-auto py-2 px-3 bg-indigo-100 text-indigo-700 font-bold rounded-xl text-sm transition-colors hover:bg-indigo-200" title="Editar" onclick="openEditUser('${u.id}')"><i class="fa-solid fa-pencil"></i></button>
+                    <button class="w-full md:w-auto py-2 px-3 bg-red-100 text-red-600 font-bold rounded-xl text-sm transition-colors hover:bg-red-200" title="Eliminar" onclick="deleteUser('${u.id}')"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>`
+        }).join('');
+    }
+
+    window.activateUser = id => { state.activeResguardante = state.resguardantes.find(u=>u.id===id); updateBanner(); renderUsers(); window.scrollTo(0,0); focusSearch(); };
+    
+    window.deleteUser = id => {
+        const user = state.resguardantes.find(u => u.id === id); if(!user) return;
+        showConfirm('Eliminar Usuario', `¿Estás seguro de eliminar a ${user.name}?`, () => {
+            state.resguardantes = state.resguardantes.filter(u => u.id !== id);
+            if(state.activeResguardante && state.activeResguardante.id === id) { state.activeResguardante = null; updateBanner(); }
+            recalculateLocationCounts(); saveState(); renderUsers(); populateFilters(); showToast('Usuario eliminado.', 'success');
+        });
+    };
+
+    function updateActiveUserLocationSelect() {
+        const select = document.getElementById('active-user-location-select'); if(!state.activeResguardante) return;
+        const uName = state.activeResguardante.name; const currentVal = select.value;
+        select.innerHTML = (state.activeResguardante.locations||[state.activeResguardante.locationWithId]).map(l => {
+            const invCount = state.inventory.filter(i => i.UBICADO==='SI' && i['NOMBRE DE USUARIO']===uName && i.ubicacionEspecifica===l).length;
+            const adCount = state.additionalItems.filter(i => i.usuario===uName && i.ubicacionEspecifica===l).length;
+            return `<option value="${l}">${l} (${invCount} + ${adCount})</option>`;
+        }).join('');
+        if(currentVal && Array.from(select.options).some(o=>o.value===currentVal)) select.value = currentVal;
+    }
+
+    function updateBanner() {
+        const b = document.getElementById('active-user-banner');
+        if(state.activeResguardante) {
+            document.getElementById('active-user-banner-name').textContent = state.activeResguardante.name;
+            const areaName = NOMBRES_AREAS[state.activeResguardante.area] || '';
+            document.getElementById('active-user-banner-area').textContent = `ÁREA ${state.activeResguardante.area} ${areaName ? '- ' + areaName : ''}`;
+            updateActiveUserLocationSelect(); b.classList.remove('hidden');
+        } else b.classList.add('hidden');
+    }
+    document.getElementById('deactivate-user-btn').onclick = () => { state.activeResguardante=null; updateBanner(); renderUsers(); };
+
+    window.showUserDetail = id => {
+        const u = state.resguardantes.find(x=>x.id===id); const areaName = NOMBRES_AREAS[u.area] || 'Área Desconocida';
+        document.getElementById('user-detail-view-name').textContent = u.name; document.getElementById('user-detail-view-area').textContent = `${u.area} - ${areaName}`;
+        document.getElementById('user-detail-view-location').innerHTML = `<ul class="list-disc ml-6 text-base">${(u.locations||[]).map(l=>`<li>${l}</li>`).join('')}</ul>`;
+        document.getElementById('user-detail-view-modal').classList.add('show');
+    };
+    
+    window.openEditUser = id => {
+        const u = state.resguardantes.find(x=>x.id===id); document.getElementById('edit-user-name').value = u.name; document.getElementById('edit-user-area').value = u.area;
+        tempEditUserLocations = [...(u.locations||[])]; renderLocChips(document.getElementById('edit-user-locations-list'), tempEditUserLocations);
+        document.getElementById('edit-user-save-btn').dataset.id = id; document.getElementById('edit-user-modal').classList.add('show');
+    };
+    
+    document.getElementById('edit-user-save-btn').onclick = e => {
+        const u = state.resguardantes.find(x=>x.id===e.target.dataset.id);
+        const oldName = u.name; u.name = document.getElementById('edit-user-name').value; u.area = document.getElementById('edit-user-area').value;
+        u.locations = [...tempEditUserLocations]; u.locationWithId = tempEditUserLocations[0];
+        if(oldName!==u.name) { state.inventory.forEach(i=>{if(i['NOMBRE DE USUARIO']===oldName) i['NOMBRE DE USUARIO']=u.name}); state.additionalItems.forEach(i=>{if(i.usuario===oldName) i.usuario=u.name}); }
+        recalculateLocationCounts(); state.suggestedNames = [...new Set([...(state.suggestedNames||[]), u.name])]; saveState(); renderUsers(); document.getElementById('edit-user-modal').classList.remove('show');
+        if(state.activeResguardante && state.activeResguardante.id===u.id) updateBanner();
+    };
+
+    let currentPage = 1; const itemsPerPage = 30; let filtered = [];
+    
+    function addToSearchHistory(item) { if (!item || item.trim() === '') return; searchHistory = searchHistory.filter(i => i !== item); searchHistory.unshift(item); if (searchHistory.length > 5) searchHistory.pop(); renderSearchHistory(); }
+    function renderSearchHistory() {
+        const container = document.getElementById('search-history-container'); if (!container) return;
+        container.innerHTML = searchHistory.map(term => `<span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-bold cursor-pointer shadow-sm hover:bg-indigo-200 transition-colors" onclick="applySearch('${term}')"><i class="fa-solid fa-clock-rotate-left mr-1"></i>${term}</span>`).join('');
+    }
+    window.applySearch = (term) => { document.getElementById('global-search-input').value = term; currentPage = 1; filterAndRenderInventory(); };
+
+    function filterAndRenderInventory() {
+        const term = document.getElementById('global-search-input').value.toLowerCase(); const stat = document.getElementById('status-filter').value;
+        const area = document.getElementById('area-filter-inventory').value; const bookType = document.getElementById('book-type-filter').value;
+        
+        let combinedInv = state.inventory.map(i => ({...i, _type: 'inv'}));
+        let combinedAdic = state.additionalItems.map(a => ({
+            _type: 'adic', _id: a.id, 'CLAVE UNICA': a.claveAsignada || 'S/C', DESCRIPCION: a.descripcion, MARCA: a.marca, MODELO: a.modelo, SERIE: a.serie,
+            'NOMBRE DE USUARIO': a.usuario, UBICADO: 'SI', areaOriginal: 'ADICIONAL', ubicacionEspecifica: a.ubicacionEspecifica, listadoOriginal: 'Adicional'
+        }));
+        
+        let allItems = [...combinedInv, ...combinedAdic];
+        filtered = allItems.filter(i => (!term || [i['CLAVE UNICA'], i.DESCRIPCION, i.SERIE].some(f=>String(f||'').toLowerCase().includes(term))) && (stat==='all' || i.UBICADO===stat) && (area==='all' || i.areaOriginal===area) && (bookType==='all' || i.listadoOriginal===bookType));
+        
+        const tbody = document.getElementById('inventory-table-body');
+        tbody.innerHTML = filtered.slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage).map(i => {
+            const isAdic = i._type === 'adic'; const c = isAdic ? i._id : i['CLAVE UNICA']; 
+            const errorArea = !isAdic && i.UBICADO==='SI' && i.areaOriginal !== state.activeResguardante?.area;
+            const bgClass = isAdic ? 'bg-yellow-50' : (i.UBICADO==='SI' ? 'bg-green-50' : 'bg-white');
+            const assignedUser = state.resguardantes.find(u => u.name === i['NOMBRE DE USUARIO']); const userAreaText = assignedUser ? `(A${assignedUser.area})` : '';
+            const tagAdicional = isAdic ? `<span class="px-1.5 py-0.5 bg-yellow-200 text-yellow-800 text-[10px] rounded font-bold ml-1">ADICIONAL</span>` : '';
+            const tagReetiquetado = !isAdic && i.RE_ETIQUETADO === 'SI' ? `<span class="px-1.5 py-0.5 bg-blue-200 text-blue-800 text-[10px] rounded font-bold ml-1"><i class="fa-solid fa-tags"></i> RE-ETIQUETADO</span>` : '';
+            
+            return `<tr class="hover:bg-gray-100 transition-colors border-b ${bgClass}" data-clave="${c}">
+                <td class="px-3 py-3 text-center">${isAdic ? `` : `<input type="checkbox" class="inv-cb">`}</td>
+                <td class="px-3 py-3 cursor-pointer" onclick="${isAdic ? `showAdicDetail('${i._id}')` : `showInvDetail('${c}')`}">
+                    <p class="font-extrabold text-base text-gray-800">${escapeHTML(i.DESCRIPCION).substring(0,40)}... ${tagAdicional} ${tagReetiquetado}</p>
+                    <p class="font-mono text-sm text-indigo-600 font-bold mt-0.5">CLV: ${isAdic ? i['CLAVE UNICA'] : c}</p>
+                </td>
+                <td class="px-3 py-3 text-sm text-gray-600">
+                    <p><span class="font-bold">M:</span> ${i.MARCA||'-'} <span class="mx-1">|</span> <span class="font-bold">Mod:</span> ${i.MODELO||'-'}</p><p class="font-mono mt-0.5 break-all"><span class="font-bold font-sans">S:</span> ${i.SERIE||'-'}</p>
+                </td>
+                <td class="px-3 py-3">
+                    ${i.UBICADO==='SI' ? `<p class="font-bold text-green-700 text-sm"><i class="fa-solid fa-check-circle mr-1"></i>${i['NOMBRE DE USUARIO']} <span class="text-xs font-normal text-gray-500">${userAreaText}</span></p><p class="text-xs font-bold text-indigo-600 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i>${i.ubicacionEspecifica||''}</p>${errorArea ? `<span class="inline-block mt-0.5 bg-red-100 text-red-700 text-[10px] font-bold px-1.5 py-0.5 rounded">Fuera Área (${i.areaOriginal})</span>` : ''}` : `<span class="px-2 py-1 bg-gray-200 text-gray-600 font-bold rounded-md text-xs">Pendiente</span>`}
+                </td>
+                <td class="px-3 py-3">
+                    <div class="flex justify-center space-x-2">
+                        ${isAdic ? `<button class="touch-icon ${state.additionalPhotos[i._id]?'bg-indigo-100 text-indigo-600':'bg-gray-100 text-gray-400'}" onclick="showPhoto('additional','${i._id}')"><i class="fa-solid fa-camera"></i></button>` : `<button class="touch-icon ${state.notes[c]?'bg-yellow-100 text-yellow-600':'bg-gray-100 text-gray-400'}" onclick="showNoteModal('${c}')"><i class="fa-solid fa-note-sticky"></i></button><button class="touch-icon ${state.photos[c]?'bg-indigo-100 text-indigo-600':'bg-gray-100 text-gray-400'}" onclick="showPhoto('inventory','${c}')"><i class="fa-solid fa-camera"></i></button>`}
+                    </div>
+                </td>
+            </tr>`;
+        }).join('');
+        document.getElementById('page-info').textContent = `Página ${currentPage} de ${Math.ceil(filtered.length/itemsPerPage)||1}`;
+    }
+
+    document.getElementById('status-filter').onchange = () => {currentPage=1; filterAndRenderInventory();}; document.getElementById('area-filter-inventory').onchange = () => {currentPage=1; filterAndRenderInventory();}; document.getElementById('book-type-filter').onchange = () => {currentPage=1; filterAndRenderInventory();};
+    document.getElementById('nav-clear-search-btn').onclick = () => { document.getElementById('global-search-input').value = ''; document.getElementById('status-filter').value = 'all'; document.getElementById('area-filter-inventory').value = 'all'; document.getElementById('book-type-filter').value = 'all'; currentPage = 1; filterAndRenderInventory(); };
+    document.getElementById('prev-page-btn').onclick = () => {if(currentPage>1){currentPage--; filterAndRenderInventory();}}; document.getElementById('next-page-btn').onclick = () => {if(currentPage<Math.ceil(filtered.length/itemsPerPage)){currentPage++; filterAndRenderInventory();}}; document.getElementById('select-all-checkbox').onchange = e => document.querySelectorAll('.inv-cb').forEach(c=>c.checked=e.target.checked);
+
+    function doAction(action) {
+        const cbs = document.querySelectorAll('.inv-cb:checked'); if(!cbs.length) return showToast('Selecciona bienes', 'warning');
+        if(action!=='desubicar' && !state.activeResguardante) return showToast('¡Activa un usuario primero!', 'error');
+        cbs.forEach(cb => {
+            const claveElement = cb.closest('tr').dataset.clave; const i = state.inventory.find(x=>x['CLAVE UNICA'] === claveElement);
+            if(i) {
+                if(action==='desubicar') { i.UBICADO='NO'; i.RE_ETIQUETADO='NO'; i['NOMBRE DE USUARIO']=''; i.ubicacionEspecifica=''; } 
+                else { 
+                    i.UBICADO='SI'; 
+                    i.RE_ETIQUETADO='NO'; 
+                    i['NOMBRE DE USUARIO']=state.activeResguardante.name; 
+                    i.ubicacionEspecifica = document.getElementById('active-user-location-select').value || state.activeResguardante.locationWithId; 
+                    i.areaIncorrecta = i.areaOriginal !== state.activeResguardante.area; 
+                    addToSearchHistory(i['CLAVE UNICA']); 
+                }
+            }
+        });
+        saveState(); renderDashboard(); filterAndRenderInventory(); updateActiveUserLocationSelect(); document.getElementById('select-all-checkbox').checked = false; showToast(`Aplicado a ${cbs.length} bienes.`);
+    }
+    document.getElementById('nav-ubicado-btn').onclick = ()=>doAction('ubicar'); document.getElementById('nav-desubicar-btn').onclick = ()=>doAction('desubicar');
+
+    // ==========================================
+    // NOTA MASIVA Y FOTO MASIVA (v8.15)
+    // ==========================================
+    document.getElementById('nav-bulk-note-btn').onclick = () => {
+        const cbs = document.querySelectorAll('.inv-cb:checked'); 
+        if(!cbs.length) return showToast('Selecciona bienes para la nota masiva', 'warning');
+        
+        document.getElementById('note-textarea').value = ''; 
+        document.getElementById('note-save-btn').dataset.c = 'BULK'; 
+        document.getElementById('notes-modal').classList.add('show'); 
+        setTimeout(() => document.getElementById('note-textarea').focus(), 100);
+    };
+
+    document.getElementById('nav-bulk-photo-btn').onclick = () => {
+        const cbs = document.querySelectorAll('.inv-cb:checked'); 
+        if(!cbs.length) return showToast('Selecciona bienes para foto masiva', 'warning');
+        
+        showPhoto('bulk', 'BULK');
+    };
+
+    document.getElementById('ad-posesion').addEventListener('change', function(e) {
+        const cont = document.getElementById('contenedor-contrato');
+        cont.classList.toggle('hidden', e.target.value !== 'Arrendamiento');
+        if(e.target.value !== 'Arrendamiento') document.getElementById('ad-num-contrato').value = 'LXVIDG AJ- 070/2024';
+    });
+    
+    document.getElementById('edit-ad-posesion').addEventListener('change', function(e) {
+        const cont = document.getElementById('edit-contenedor-contrato');
+        cont.classList.toggle('hidden', e.target.value !== 'Arrendamiento');
+        if(e.target.value !== 'Arrendamiento') document.getElementById('edit-ad-num-contrato').value = '';
+    });
+
+    document.getElementById('ad-bulk-autofill-btn').onclick = () => {
+        if (!state.additionalItems || state.additionalItems.length === 0) return showToast('No hay bienes adicionales registrados.', 'warning');
+        let updatedCount = 0;
+        state.additionalItems.forEach(item => {
+            if (item.serie) {
+                const val = String(item.serie).toUpperCase().trim();
+                const perfil = perfilesMagicos.find(p => p.regex.test(val));
+                
+                if (perfil) {
+                    let changed = false;
+                    if (item.descripcion !== perfil.desc) { item.descripcion = perfil.desc; changed = true; }
+                    if (item.marca !== perfil.marca) { item.marca = perfil.marca; changed = true; }
+                    if (item.modelo !== perfil.modelo) { item.modelo = perfil.modelo; changed = true; }
+                    if (item.posesion !== (perfil.posesion||'Cámara')) { 
+                        item.posesion = perfil.posesion||'Cámara'; 
+                        if(item.posesion === 'Arrendamiento') item.numContrato = 'LXVIDG AJ- 070/2024';
+                        changed = true; 
+                    }
+                    if (changed) updatedCount++;
+                } 
+            }
+        });
+        if (updatedCount > 0) { saveState(); renderAdicionales(); filterAndRenderInventory(); showToast(`¡Listo! Se autocompletaron ${updatedCount} bienes adicionales.`, 'success');
+        } else showToast('No se encontraron coincidencias mágicas.', 'info');
+    };
+
+    document.getElementById('ad-serie').addEventListener('input', (e) => {
+        const val = e.target.value.toUpperCase().trim(); const warningDiv = document.getElementById('serie-warning');
+        warningDiv.classList.add('hidden'); warningDiv.innerHTML = '';
+        if(val.length > 3) {
+            const invMatch = state.inventory.find(i => String(i.SERIE).toUpperCase() === val);
+            const adicMatch = state.additionalItems.find(i => String(i.serie).toUpperCase() === val);
+            if(invMatch) { warningDiv.innerHTML = `⚠️ Existe en inventario.<br><a href="#" onclick="showInvDetail('${invMatch['CLAVE UNICA']}'); return false;" class="underline font-black cursor-pointer">${invMatch['CLAVE UNICA']}</a>`; warningDiv.classList.remove('hidden'); } 
+            else if (adicMatch) { warningDiv.innerHTML = `⚠️ Existe en adicionales.<br><a href="#" onclick="showAdicDetail('${adicMatch.id}'); return false;" class="underline font-black cursor-pointer">${adicMatch.claveAsignada || 'S/C'}</a>`; warningDiv.classList.remove('hidden'); }
+        }
+        
+        const perfil = perfilesMagicos.find(p => p.regex.test(val));
+        if(perfil) { 
+            document.getElementById('ad-desc').value = perfil.desc; document.getElementById('ad-marca').value = perfil.marca; document.getElementById('ad-modelo').value = perfil.modelo; 
+            document.getElementById('ad-posesion').value = perfil.posesion || 'Cámara';
+            document.getElementById('ad-posesion').dispatchEvent(new Event('change'));
+        }
+    });
+
+    document.getElementById('autofill-serie-btn').onclick = () => {
+        const val = document.getElementById('ad-serie').value.toUpperCase().trim();
+        if(!val) return showToast('Escribe una serie primero.', 'warning');
+        
+        const invMatch = state.inventory.find(i => String(i.SERIE).toUpperCase() === val);
+        const adicMatch = state.additionalItems.find(i => String(i.serie).toUpperCase() === val);
+        
+        if (invMatch) {
+            document.getElementById('ad-desc').value = invMatch.DESCRIPCION || '';
+            document.getElementById('ad-marca').value = invMatch.MARCA || '';
+            document.getElementById('ad-modelo').value = invMatch.MODELO || '';
+            showToast('Copiado del Inventario Exacto.', 'success');
+        } else if (adicMatch) {
+            document.getElementById('ad-desc').value = adicMatch.descripcion || '';
+            document.getElementById('ad-marca').value = adicMatch.marca || '';
+            document.getElementById('ad-modelo').value = adicMatch.modelo || '';
+            showToast('Copiado de Adicionales Exacto.', 'success');
+        } else {
+            const perfil = perfilesMagicos.find(p => p.regex.test(val));
+            if (perfil) {
+                document.getElementById('ad-desc').value = perfil.desc;
+                document.getElementById('ad-marca').value = perfil.marca || '';
+                document.getElementById('ad-modelo').value = perfil.modelo || '';
+                document.getElementById('ad-posesion').value = perfil.posesion || 'Cámara';
+                document.getElementById('ad-posesion').dispatchEvent(new Event('change'));
+                return showToast('Autocompletado por perfil mágico.', 'success');
+            }
+            showToast('No se encontró la serie exacta.', 'info');
+        }
+    };
+
+    document.getElementById('add-adicional-btn').onclick = () => {
+        if(!state.activeResguardante) return showToast('¡Activa un usuario!', 'error');
+        const f = document.getElementById('adicional-form');
+        const item = {
+            id: generateUUID(), claveAsignada: f.clave.value, descripcion: f.descripcion.value, marca: f.marca.value, modelo: f.modelo.value, serie: f.serie.value, 
+            posesion: f.posesion.value, numContrato: document.getElementById('ad-num-contrato').value,
+            personal: document.querySelector('input[name="personal"]:checked').value, usuario: state.activeResguardante.name, ubicacionEspecifica: document.getElementById('active-user-location-select').value || state.activeResguardante.locationWithId
+        };
+        if(!item.descripcion) return showToast('Descripción obligatoria', 'warning');
+        
+        if(item.personal==='Si') {
+            document.getElementById('formato-entrada-modal').classList.add('show');
+            document.getElementById('formato-entrada-si').onclick = () => { item.tieneFormatoEntrada=true; saveAdic(item); };
+            document.getElementById('formato-entrada-no').onclick = () => { item.tieneFormatoEntrada=false; saveAdic(item); };
+        } else saveAdic(item);
+    };
+    
+    function saveAdic(item) { 
+        state.additionalItems.unshift(item); 
+        saveState(); 
+        renderAdicionales(); 
+        updateActiveUserLocationSelect(); 
+        filterAndRenderInventory(); 
+        
+        document.getElementById('adicional-form').reset(); 
+        document.getElementById('serie-warning').classList.add('hidden'); 
+        document.getElementById('formato-entrada-modal').classList.remove('show'); 
+        document.getElementById('ad-num-contrato').value = 'LXVIDG AJ- 070/2024';
+        document.getElementById('ad-posesion').dispatchEvent(new Event('change')); 
+        
+        showToast('Adicional guardado.'); 
+        focusSearch();
+    }
+
+    function updateDatalists() {
+        const descripciones = [...new Set(state.additionalItems.map(i=>i.descripcion))].filter(Boolean); 
+        const marcas = [...new Set(state.additionalItems.map(i=>i.marca))].filter(Boolean);
+        const modelos = [...new Set(state.additionalItems.map(i=>i.modelo))].filter(Boolean);
+        
+        let descDatalist = document.getElementById('lista-descripciones'); if (!descDatalist) { descDatalist = document.createElement('datalist'); descDatalist.id = 'lista-descripciones'; document.body.appendChild(descDatalist); }
+        descDatalist.innerHTML = descripciones.map(d=>`<option value="${d}">`).join('');
+        
+        let marcaDatalist = document.getElementById('lista-marcas'); if (!marcaDatalist) { marcaDatalist = document.createElement('datalist'); marcaDatalist.id = 'lista-marcas'; document.body.appendChild(marcaDatalist); }
+        marcaDatalist.innerHTML = marcas.map(m=>`<option value="${m}">`).join('');
+
+        let modeloDatalist = document.getElementById('lista-modelos'); if (!modeloDatalist) { modeloDatalist = document.createElement('datalist'); modeloDatalist.id = 'lista-modelos'; document.body.appendChild(modeloDatalist); }
+        modeloDatalist.innerHTML = modelos.map(m=>`<option value="${m}">`).join('');
+        
+        let respDatalist = document.getElementById('lista-responsables'); if (!respDatalist) { respDatalist = document.createElement('datalist'); respDatalist.id = 'lista-responsables'; document.body.appendChild(respDatalist); }
+        respDatalist.innerHTML = (state.suggestedNames||[]).map(n=>`<option value="${n}">`).join('');
+    }
+
+    function renderAdicionales() {
+        const areaFilter = document.getElementById('ad-area-filter').value; const userFilter = document.getElementById('ad-user-filter').value; const term = document.getElementById('global-search-input').value.toLowerCase();
+        let list = state.additionalItems;
+        if(areaFilter !== 'all') { const usersInArea = state.resguardantes.filter(u => u.area === areaFilter).map(u => u.name); list = list.filter(i => usersInArea.includes(i.usuario)); }
+        if(userFilter !== 'all') list = list.filter(i => i.usuario === userFilter);
+        if(term) list = list.filter(i => String(i.descripcion||'').toLowerCase().includes(term) || String(i.claveAsignada||'').toLowerCase().includes(term) || String(i.serie||'').toLowerCase().includes(term));
+
+        document.getElementById('additional-items-total').textContent = list.length;
+        document.getElementById('adicionales-list').innerHTML = list.map(i => {
+            const arrendamientoTag = i.posesion === 'Arrendamiento' ? `<span class="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-800 text-[10px] rounded font-bold uppercase"><i class="fa-solid fa-file-contract mr-1"></i>Arrendamiento ${i.numContrato ? '('+i.numContrato+')':''}</span>` : '';
+            const formatoTag = i.personal==='Si' ? (i.tieneFormatoEntrada ? '<span class="ml-1 px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] rounded font-bold uppercase">Autorizado</span>':'<span class="ml-1 px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] rounded font-bold uppercase">Sin Formato</span>') : '';
+            return `
+            <div class="p-3 border-l-4 rounded-xl bg-white shadow-sm flex flex-col md:flex-row justify-between items-center ${i.personal==='Si'?'border-yellow-400':(i.posesion==='Arrendamiento'?'border-blue-500':'border-green-400')} mb-2 hover:bg-gray-50">
+                <div class="mb-2 md:mb-0 cursor-pointer w-full md:flex-1 min-w-0 pr-2" onclick="showAdicDetail('${i.id}')">
+                    <p class="font-bold text-base text-gray-800 truncate" title="${i.descripcion}">${i.descripcion} ${formatoTag}${arrendamientoTag}</p>
+                    <p class="text-sm text-gray-500 font-medium leading-tight truncate"><span class="font-bold">Clv:</span> ${i.claveAsignada||'-'} <span class="mx-1">|</span> <span class="font-bold">Mod:</span> ${i.modelo||'-'} <span class="mx-1">|</span> <span class="font-bold">Ser:</span> ${i.serie||'-'}</p>
+                    <p class="text-xs text-indigo-700 font-bold leading-tight truncate mt-0.5"><i class="fa-solid fa-user mr-1"></i>${i.usuario} <span class="text-gray-400 font-normal ml-1">(${i.ubicacionEspecifica||''})</span></p>
+                </div>
+                <div class="flex flex-shrink-0 flex-wrap gap-2 w-full md:w-auto grid grid-cols-4 md:flex">
+                    <button class="w-full md:w-auto py-2 px-3 bg-green-100 text-green-700 font-bold rounded-xl text-sm" onclick="duplicateAdic('${i.id}')" title="Clonar"><i class="fa-solid fa-copy"></i></button>
+                    <button class="w-full md:w-auto py-2 px-3 bg-indigo-100 text-indigo-700 font-bold rounded-xl text-sm" onclick="showPhoto('additional', '${i.id}')" title="Foto"><i class="fa-solid fa-camera"></i></button>
+                    <button class="w-full md:w-auto py-2 px-3 bg-blue-100 text-blue-700 font-bold rounded-xl text-sm" onclick="editAdic('${i.id}')" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                    <button class="w-full md:w-auto py-2 px-3 bg-red-100 text-red-600 font-bold rounded-xl text-sm" onclick="delAdic('${i.id}')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    document.getElementById('ad-area-filter').onchange = renderAdicionales; document.getElementById('ad-user-filter').onchange = renderAdicionales;
+
+    window.duplicateAdic = id => {
+        const i = state.additionalItems.find(x=>x.id===id); if(!i) return;
+        document.getElementById('ad-clave').value = ''; document.getElementById('ad-desc').value = i.descripcion || ''; document.getElementById('ad-marca').value = i.marca || ''; document.getElementById('ad-modelo').value = i.modelo || ''; document.getElementById('ad-serie').value = i.serie || ''; 
+        const posSelect = document.getElementById('ad-posesion'); if(posSelect) posSelect.value = i.posesion || 'Cámara';
+        document.getElementById('ad-num-contrato').value = i.numContrato || 'LXVIDG AJ- 070/2024';
+        document.getElementById('ad-posesion').dispatchEvent(new Event('change'));
+        const personalRadios = document.querySelectorAll('input[name="personal"]'); personalRadios.forEach(r => r.checked = (r.value === (i.personal || 'No')));
+        showToast('Datos clonados.', 'info'); document.getElementById('adicional-form').scrollIntoView({behavior: 'smooth', block: 'start'});
+    };
+
+    window.showAdicDetail = id => {
+        const i = state.additionalItems.find(x=>x.id===id); if(!i) return;
+        document.getElementById('ad-det-desc').textContent = i.descripcion || '-'; document.getElementById('ad-det-clave').textContent = i.claveAsignada || 'Sin Clave'; document.getElementById('ad-det-marca').textContent = i.marca || '-'; document.getElementById('ad-det-modelo').textContent = i.modelo || '-'; document.getElementById('ad-det-serie').textContent = i.serie || '-'; 
+        
+        if(i.posesion === 'Arrendamiento' && i.numContrato) {
+            document.getElementById('ad-det-posesion').innerHTML = `Arrendamiento <br><span class="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded inline-block mt-1 font-bold"><i class="fa-solid fa-file-signature"></i> Contrato: ${i.numContrato}</span>`;
+        } else {
+            document.getElementById('ad-det-posesion').textContent = i.posesion || '-';
+        }
+
+        document.getElementById('ad-det-personal').innerHTML = i.personal === 'Si' ? `<span class="text-yellow-600 font-bold">Sí ${i.tieneFormatoEntrada ? '(Con Formato)' : '(Sin Formato)'}</span>` : 'No';
+        document.getElementById('ad-det-usuario').textContent = i.usuario || '-'; document.getElementById('ad-det-ubicacion').textContent = i.ubicacionEspecifica || '-';
+        
+        document.getElementById('ad-det-edit-btn').onclick = () => { document.getElementById('adicional-detail-view-modal').classList.remove('show'); editAdic(id); };
+        document.getElementById('ad-det-foto-btn').dataset.id = id; document.getElementById('ad-det-foto-btn').onclick = () => showPhoto('additional', id);
+
+        const photoCont = document.getElementById('ad-det-photo'); const noPhoto = document.getElementById('ad-det-no-photo'); const deleteBtn = document.getElementById('ad-delete-photo-btn');
+        photoCont.classList.add('hidden'); if(deleteBtn) deleteBtn.classList.add('hidden'); noPhoto.classList.remove('hidden');
+
+        if(state.additionalPhotos[id]) { photoDB.getItem('photos', `additional-${id}`).then(b => { if(b) { photoCont.src = URL.createObjectURL(b); photoCont.classList.remove('hidden'); if(deleteBtn) deleteBtn.classList.remove('hidden'); noPhoto.classList.add('hidden'); } }); }
+        document.getElementById('adicional-detail-view-modal').classList.add('show');
+    };
+
+    window.editAdic = id => {
+        const i = state.additionalItems.find(x=>x.id===id); 
+        document.getElementById('edit-ad-clave').value = i.claveAsignada||''; document.getElementById('edit-ad-desc').value = i.descripcion; document.getElementById('edit-ad-marca').value = i.marca||''; document.getElementById('edit-ad-modelo').value = i.modelo||''; document.getElementById('edit-ad-serie').value = i.serie||''; 
+        document.getElementById('edit-ad-posesion').value = i.posesion||'Cámara'; 
+        document.getElementById('edit-ad-num-contrato').value = i.numContrato || 'LXVIDG AJ- 070/2024';
+        document.getElementById('edit-ad-posesion').dispatchEvent(new Event('change'));
+        document.getElementById('edit-ad-personal').value = i.personal||'No';
+        document.getElementById('edit-adicional-save-btn').dataset.id = id; document.getElementById('edit-adicional-modal').classList.add('show');
+    };
+
+    document.getElementById('edit-adicional-save-btn').onclick = e => {
+        const i = state.additionalItems.find(x=>x.id===e.target.dataset.id);
+        i.claveAsignada = document.getElementById('edit-ad-clave').value; i.descripcion = document.getElementById('edit-ad-desc').value; i.marca = document.getElementById('edit-ad-marca').value; i.modelo = document.getElementById('edit-ad-modelo').value; i.serie = document.getElementById('edit-ad-serie').value; 
+        i.posesion = document.getElementById('edit-ad-posesion').value; 
+        i.numContrato = document.getElementById('edit-ad-num-contrato').value;
+        i.personal = document.getElementById('edit-ad-personal').value;
+        saveState(); renderAdicionales(); filterAndRenderInventory(); document.getElementById('edit-adicional-modal').classList.remove('show'); showToast('Adicional actualizado');
+    };
+
+    window.delAdic = id => { showConfirm('Borrar', '¿Eliminar permanentemente este adicional?', () => { state.additionalItems = state.additionalItems.filter(i=>i.id!==id); saveState(); renderAdicionales(); updateActiveUserLocationSelect(); filterAndRenderInventory(); showToast('Eliminado'); }); };
+
+    window.showInvDetail = c => {
+        const i = state.inventory.find(x=>x['CLAVE UNICA']===c); if(!i) return; 
+        document.getElementById('detail-view-clave').textContent = i['CLAVE UNICA']; document.getElementById('detail-view-descripcion').textContent = i.DESCRripcion || i.DESCRIPCION; document.getElementById('detail-view-marca').textContent = i.MARCA||'-'; document.getElementById('detail-view-modelo').textContent = i.MODELO||'-'; document.getElementById('detail-view-serie').textContent = i.SERIE||'-'; document.getElementById('detail-view-usuario').textContent = i['NOMBRE DE USUARIO']||'Sin asignar'; document.getElementById('detail-view-ubicacion-especifica').textContent = i.ubicacionEspecifica||'-';
+        const nombreAreaOriginal = NOMBRES_AREAS[i.areaOriginal] || ''; document.getElementById('detail-view-area').textContent = i.areaOriginal + (nombreAreaOriginal ? ` - ${nombreAreaOriginal}` : '');
+        
+        const photoCont = document.getElementById('detail-view-photo'); const noPhoto = document.getElementById('detail-view-no-photo'); const deleteBtn = document.getElementById('delete-active-photo-btn');
+        photoCont.classList.add('hidden'); if(deleteBtn) deleteBtn.classList.add('hidden'); noPhoto.classList.remove('hidden');
+        
+        if(state.photos[c]) { photoDB.getItem('photos', `inventory-${c}`).then(b => { if(b) { photoCont.src=URL.createObjectURL(b); photoCont.classList.remove('hidden'); if(deleteBtn) deleteBtn.classList.remove('hidden'); noPhoto.classList.add('hidden'); } }); }
+        
+        document.getElementById('detail-btn-ubicar').onclick = () => {
+            if(!state.activeResguardante) { document.getElementById('item-detail-view-modal').classList.remove('show'); return showToast('Activa un usuario primero', 'error'); }
+            i.UBICADO='SI'; 
+            i.RE_ETIQUETADO='NO'; 
+            i['NOMBRE DE USUARIO']=state.activeResguardante.name; 
+            i.ubicacionEspecifica = document.getElementById('active-user-location-select').value || state.activeResguardante.locationWithId; 
+            i.areaIncorrecta = i.areaOriginal !== state.activeResguardante.area; 
+            addToSearchHistory(c); 
+            saveState(); renderDashboard(); filterAndRenderInventory(); updateActiveUserLocationSelect(); showToast('Asignado correctamente'); document.getElementById('item-detail-view-modal').classList.remove('show'); focusSearch();
+        };
+
+        document.getElementById('detail-btn-reetiquetar').onclick = () => {
+            if(!state.activeResguardante) { document.getElementById('item-detail-view-modal').classList.remove('show'); return showToast('Activa un usuario primero', 'error'); }
+            i.UBICADO='SI'; i.RE_ETIQUETADO='SI'; i['NOMBRE DE USUARIO']=state.activeResguardante.name; i.ubicacionEspecifica = document.getElementById('active-user-location-select').value || state.activeResguardante.locationWithId; i.areaIncorrecta = i.areaOriginal !== state.activeResguardante.area; addToSearchHistory(c); 
+            saveState(); renderDashboard(); filterAndRenderInventory(); updateActiveUserLocationSelect(); showToast('Re-etiquetado y asignado'); document.getElementById('item-detail-view-modal').classList.remove('show'); focusSearch();
+        };
+
+        document.getElementById('detail-btn-desubicar').onclick = () => { i.UBICADO='NO'; i.RE_ETIQUETADO='NO'; i['NOMBRE DE USUARIO']=''; i.ubicacionEspecifica=''; saveState(); renderDashboard(); filterAndRenderInventory(); updateActiveUserLocationSelect(); showToast('Des-asignado'); showInvDetail(c); };
+        document.getElementById('detail-btn-nota').onclick = () => showNoteModal(c); document.getElementById('detail-btn-foto').onclick = () => showPhoto('inventory', c);
+        document.getElementById('item-detail-view-modal').classList.add('show');
+    };
+    
+    // ==========================================
+    // NOTAS (v8.13 AUTO-FOCUS Y MASIVA)
+    // ==========================================
+    window.showNoteModal = c => { 
+        document.getElementById('note-textarea').value = state.notes[c]||''; 
+        document.getElementById('note-save-btn').dataset.c = c; 
+        document.getElementById('notes-modal').classList.add('show'); 
+        setTimeout(() => document.getElementById('note-textarea').focus(), 100);
+    };
+    
+    document.getElementById('note-save-btn').onclick = e => { 
+        const targetC = e.target.dataset.c;
+        const noteText = document.getElementById('note-textarea').value;
+        
+        if (targetC === 'BULK') {
+            const cbs = document.querySelectorAll('.inv-cb:checked');
+            cbs.forEach(cb => {
+                const claveElement = cb.closest('tr').dataset.clave; 
+                if(noteText.trim() === '') delete state.notes[claveElement];
+                else state.notes[claveElement] = noteText;
+            });
+            showToast(`Nota masiva aplicada a ${cbs.length} bienes.`);
+            document.getElementById('select-all-checkbox').checked = false;
+        } else {
+            if(noteText.trim() === '') delete state.notes[targetC];
+            else state.notes[targetC] = noteText; 
+            showToast('Nota guardada');
+        }
+        
+        saveState(); 
+        filterAndRenderInventory(); 
+        document.getElementById('notes-modal').classList.remove('show'); 
+        focusSearch();
+    };
+
+    window.showPhoto = (type, id) => {
+        document.getElementById('photo-input').dataset.t = type; document.getElementById('photo-input').dataset.i = id;
+        const view = document.getElementById('photo-view-container'); const up = document.getElementById('photo-upload-container'); const cam = document.getElementById('camera-view-container');
+        view.classList.add('hidden'); up.classList.add('hidden'); cam.classList.add('hidden'); cam.classList.remove('flex'); 
+        
+        let titleText = 'Fotografía';
+        if (type === 'bulk') {
+            titleText = `Foto Masiva (${document.querySelectorAll('.inv-cb:checked').length} bienes)`;
+        } else if(type === 'inventory') {
+            const item = state.inventory.find(x => x['CLAVE UNICA'] === id);
+            if(item) titleText = `${id} - ${(item.DESCRripcion || item.DESCRIPCION).substring(0, 40)}...`;
+        } else if(type === 'additional') {
+            const item = state.additionalItems.find(x => x.id === id);
+            if(item) titleText = `Adicional: ${item.descripcion.substring(0, 40)}...`;
+        } else if(type === 'user') {
+            const u = state.resguardantes.find(x => x.id === id);
+            if(u) titleText = `Foto: ${u.name}`;
+        }
+        document.getElementById('photo-modal-title').textContent = titleText;
+
+        const capBtn = document.getElementById('capture-photo-btn');
+        capBtn.disabled = false;
+        capBtn.innerHTML = '<i class="fa-solid fa-circle-camera mr-2"></i> Capturar Foto';
+        
+        const galBtn = document.getElementById('upload-gallery-btn');
+        if(galBtn) {
+            galBtn.disabled = false;
+            galBtn.innerHTML = '<i class="fa-solid fa-image"></i>';
+        }
+
+        let exists = false; 
+        if(type==='inventory') exists = state.photos[id]; 
+        else if (type==='user') exists = state.userPhotos && state.userPhotos[id]; 
+        else if (type==='additional') exists = state.additionalPhotos[id];
+        else exists = false; 
+
+        if(exists) { 
+            photoDB.getItem('photos', `${type}-${id}`).then(b => { 
+                if(b) { 
+                    document.getElementById('item-photo-img').src=URL.createObjectURL(b); 
+                    view.classList.remove('hidden'); 
+                } 
+            }); 
+        }
+        else { 
+            cam.classList.remove('hidden'); 
+            cam.classList.add('flex'); 
+            startCamera(); 
+        }
+        document.getElementById('photo-modal').classList.add('show');
+    };
+
+    // ==========================================
+    // MOTOR DE GUARDADO DE FOTOS (Reutilizable)
+    // ==========================================
+    function savePhotoBlob(blob, type, id, btn, isGallery = false) {
+        if (type === 'bulk') {
+            const cbs = document.querySelectorAll('.inv-cb:checked');
+            let promises = [];
+            cbs.forEach(cb => {
+                const claveElement = cb.closest('tr').dataset.clave;
+                const isAdic = state.additionalItems.some(a => a.id === claveElement);
+                const pType = isAdic ? 'additional' : 'inventory';
+                
+                if(pType === 'inventory') state.photos[claveElement] = true;
+                else state.additionalPhotos[claveElement] = true;
+                
+                promises.push(photoDB.setItem('photos', `${pType}-${claveElement}`, blob));
+            });
+            
+            Promise.all(promises).then(() => {
+                saveState();
+                stopCamera();
+                document.getElementById('photo-modal').classList.remove('show');
+                filterAndRenderInventory();
+                showToast(`Foto aplicada a ${cbs.length} bienes`, 'success');
+                document.getElementById('select-all-checkbox').checked = false;
+                cbs.forEach(cb => cb.checked = false);
+            }).finally(() => {
+                if(btn) { 
+                    btn.disabled = false; 
+                    btn.innerHTML = isGallery ? '<i class="fa-solid fa-image"></i>' : '<i class="fa-solid fa-circle-camera mr-2"></i> Capturar Foto'; 
+                }
+            });
+        } else {
+            if(type==='inventory') state.photos[id]=true; 
+            else if (type==='user') { if(!state.userPhotos) state.userPhotos = {}; state.userPhotos[id]=true; } 
+            else state.additionalPhotos[id]=true; 
+            
+            saveState(); 
+
+            const imgUrl = URL.createObjectURL(blob);
+            
+            stopCamera(); 
+            document.getElementById('photo-modal').classList.remove('show'); 
+            
+            if (type === 'inventory' && document.getElementById('item-detail-view-modal').classList.contains('show')) { 
+                document.getElementById('detail-view-photo').src = imgUrl; 
+                document.getElementById('detail-view-photo').classList.remove('hidden'); 
+                document.getElementById('delete-active-photo-btn').classList.remove('hidden'); 
+                document.getElementById('detail-view-no-photo').classList.add('hidden'); 
+            } else if (type === 'additional' && document.getElementById('adicional-detail-view-modal').classList.contains('show')) { 
+                document.getElementById('ad-det-photo').src = imgUrl; 
+                document.getElementById('ad-det-photo').classList.remove('hidden'); 
+                document.getElementById('ad-delete-photo-btn').classList.remove('hidden'); 
+                document.getElementById('ad-det-no-photo').classList.add('hidden'); 
+            }
+            
+            filterAndRenderInventory(); 
+            renderAdicionales(); 
+            renderUsers();
+
+            photoDB.setItem('photos', `${type}-${id}`, blob).then(() => { 
+                showToast('Foto guardada', 'success');
+            }).catch(() => {
+                showToast('Error de almacenamiento', 'error');
+            }).finally(() => {
+                if(btn) { 
+                    btn.disabled = false; 
+                    btn.innerHTML = isGallery ? '<i class="fa-solid fa-image"></i>' : '<i class="fa-solid fa-circle-camera mr-2"></i> Capturar Foto'; 
+                }
+            });
+        }
+    }
+
+    // ==========================================
+    // CAPTURA ASÍNCRONA INSTANTÁNEA (v8.14)
+    // ==========================================
+    document.getElementById('capture-photo-btn').onclick = function() {
+        const btn = this;
+        if(btn.disabled) return;
+        
+        const video = document.getElementById('camera-stream');
+        if (!video.videoWidth || video.videoWidth === 0) {
+            return showToast('Enfocando lente... Intenta de nuevo.', 'warning');
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Procesando...';
+
+        const canvas = document.getElementById('photo-canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+
+        canvas.toBlob(blob => {
+            const t = document.getElementById('photo-input').dataset.t; 
+            const id = document.getElementById('photo-input').dataset.i;
+            savePhotoBlob(blob, t, id, btn, false);
+        }, 'image/jpeg', 0.8);
+    };
+
+    document.getElementById('upload-gallery-btn').onclick = () => document.getElementById('photo-input').click();
+    document.getElementById('photo-input').onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const btn = document.getElementById('upload-gallery-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        
+        const t = document.getElementById('photo-input').dataset.t; 
+        const id = document.getElementById('photo-input').dataset.i;
+        
+        savePhotoBlob(file, t, id, btn, true);
+    };
+
+    document.getElementById('delete-photo-btn').onclick = () => {
+        const t = document.getElementById('photo-input').dataset.t; const id = document.getElementById('photo-input').dataset.i;
+        photoDB.db.transaction(['photos'], 'readwrite').objectStore('photos').delete(`${t}-${id}`);
+        if(t==='inventory') delete state.photos[id]; else if (t==='user') delete state.userPhotos[id]; else delete state.additionalPhotos[id];
+        saveState(); showToast('Foto eliminada'); document.getElementById('photo-modal').classList.remove('show'); filterAndRenderInventory(); renderAdicionales(); renderUsers();
+    };
+
+    function deletePhotoFromModal(type, id) {
+        showConfirm('Eliminar Foto', '¿Deseas eliminar esta fotografía y tomar una nueva?', () => {
+            photoDB.db.transaction(['photos'], 'readwrite').objectStore('photos').delete(`${type}-${id}`);
+            if(type === 'inventory') { delete state.photos[id]; document.getElementById('detail-view-photo').classList.add('hidden'); document.getElementById('delete-active-photo-btn').classList.add('hidden'); document.getElementById('detail-view-no-photo').classList.remove('hidden'); } 
+            else if (type === 'additional') { delete state.additionalPhotos[id]; document.getElementById('ad-det-photo').classList.add('hidden'); document.getElementById('ad-delete-photo-btn').classList.add('hidden'); document.getElementById('ad-det-no-photo').classList.remove('hidden'); }
+            saveState(); 
+            filterAndRenderInventory(); 
+            renderAdicionales(); 
+            setTimeout(() => showPhoto(type, id), 200); 
+        });
+    }
+
+    document.getElementById('delete-active-photo-btn').onclick = () => { const id = document.getElementById('detail-view-clave').textContent; deletePhotoFromModal('inventory', id); };
+    document.getElementById('ad-delete-photo-btn').onclick = () => { const id = document.getElementById('ad-det-foto-btn').dataset.id; deletePhotoFromModal('additional', id); };
+
+    // ==========================================
+    // QR LECTOR RECONSTRUIDO (v8.10)
+    // ==========================================
+    document.getElementById('nav-qr-scan-btn').onclick = () => {
+        document.getElementById('qr-modal').classList.add('show');
+        if (!html5QrCode) { 
+            html5QrCode = new Html5Qrcode("qr-reader"); 
+        }
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 },
+            (decodedText) => {
+                // Éxito
+                html5QrCode.stop().then(() => {
+                    document.getElementById('qr-modal').classList.remove('show'); 
+                    showToast('QR Detectado', 'success'); 
+                    applySearch(decodedText); 
+                }).catch(err => console.error(err));
+            },
+            (error) => { /* ignora errores de escaneo continuo */ }
+        ).catch(err => {
+            showToast('Error iniciando cámara para QR. Revisa permisos.', 'error');
+            document.getElementById('qr-modal').classList.remove('show');
+        });
+    };
+    
+    document.getElementById('qr-close-btn').onclick = () => { 
+        if (html5QrCode && html5QrCode.isScanning) { 
+            html5QrCode.stop().then(() => { 
+                document.getElementById('qr-modal').classList.remove('show'); 
+            }).catch(e => console.error(e)); 
+        } else {
+            document.getElementById('qr-modal').classList.remove('show');
+        }
+    };
+
+    // ==========================================
+    // FUSIÓN DE SESIONES Y CONFLICTOS (v8.6)
+    // ==========================================
+    document.getElementById('merge-session-btn').onclick = () => document.getElementById('merge-file-input').click();
+    document.getElementById('merge-file-input').onchange = async e => {
+        if(!e.target.files.length) return; 
+        document.getElementById('loading-overlay').classList.add('show'); 
+        document.getElementById('loading-text').textContent = "Comparando...";
+        
+        try {
+            const zip = await new JSZip().loadAsync(e.target.files[0]); 
+            const sessionFile = zip.file('session.json'); 
+            if(!sessionFile) throw new Error("No session.json");
+            
+            const importedState = JSON.parse(await sessionFile.async('string'));
+            let conflicts = [];
+
+            // 1. Detectar conflictos en el inventario
+            if(importedState.inventory) { 
+                importedState.inventory.forEach(impItem => { 
+                    const exIndex = state.inventory.findIndex(i => i['CLAVE UNICA'] === impItem['CLAVE UNICA']); 
+                    if (exIndex >= 0) { 
+                        const exItem = state.inventory[exIndex];
+                        if (impItem.UBICADO === 'SI' && exItem.UBICADO === 'SI' && 
+                           (impItem['NOMBRE DE USUARIO'] !== exItem['NOMBRE DE USUARIO'] || impItem.ubicacionEspecifica !== exItem.ubicacionEspecifica)) {
+                            conflicts.push({
+                                index: exIndex,
+                                clave: exItem['CLAVE UNICA'],
+                                desc: exItem.DESCRripcion || exItem.DESCRIPCION,
+                                local: { user: exItem['NOMBRE DE USUARIO'], loc: exItem.ubicacionEspecifica },
+                                imported: { user: impItem['NOMBRE DE USUARIO'], loc: impItem.ubicacionEspecifica },
+                                importedItemFull: impItem
+                            });
+                        } 
+                        else if (impItem.UBICADO === 'SI' && exItem.UBICADO !== 'SI') { 
+                            state.inventory[exIndex].UBICADO = 'SI'; 
+                            state.inventory[exIndex].RE_ETIQUETADO = impItem.RE_ETIQUETADO || 'NO'; 
+                            state.inventory[exIndex]['NOMBRE DE USUARIO'] = impItem['NOMBRE DE USUARIO']; 
+                            state.inventory[exIndex].ubicacionEspecifica = impItem.ubicacionEspecifica; 
+                            state.inventory[exIndex].areaIncorrecta = impItem.areaIncorrecta; 
+                        } 
+                    } else { 
+                        state.inventory.push(impItem); 
+                    } 
+                }); 
+            }
+            
+            // 2. Fusionar el resto de la base de datos (aditivos puros)
+            if(importedState.additionalItems) { importedState.additionalItems.forEach(impAd => { if (!state.additionalItems.some(i => i.id === impAd.id)) state.additionalItems.push(impAd); }); }
+            if(importedState.resguardantes) { importedState.resguardantes.forEach(impUser => { const exUser = state.resguardantes.find(u => u.name === impUser.name); if (exUser) { const mergedLocs = new Set([...(exUser.locations||[]), ...(impUser.locations||[])]); exUser.locations = Array.from(mergedLocs); } else { state.resguardantes.push(impUser); } }); }
+            
+            Object.keys(importedState).forEach(key => {
+                if (!['inventory', 'additionalItems', 'resguardantes', 'notes', 'photos', 'userPhotos', 'additionalPhotos', 'locations', 'areas', 'areaNames', 'suggestedNames'].includes(key)) {
+                    if (typeof importedState[key] === 'object' && importedState[key] !== null && !Array.isArray(importedState[key])) { state[key] = { ...(state[key] || {}), ...importedState[key] }; } 
+                    else if (Array.isArray(importedState[key])) { if (key === 'activityLog') state[key] = [...(state[key] || []), ...importedState[key]]; else state[key] = importedState[key]; } 
+                    else { if (state[key] === undefined) state[key] = importedState[key]; }
+                }
+            });
+
+            state.notes = { ...state.notes, ...(importedState.notes || {}) }; state.photos = { ...state.photos, ...(importedState.photos || {}) }; state.userPhotos = { ...(state.userPhotos || {}), ...(importedState.userPhotos || {}) }; state.additionalPhotos = { ...state.additionalPhotos, ...(importedState.additionalPhotos || {}) }; state.locations = { ...state.locations, ...(importedState.locations || {}) }; state.areas = [...new Set([...state.areas, ...(importedState.areas || [])])]; state.areaNames = { ...state.areaNames, ...(importedState.areaNames || {}) };
+            state.suggestedNames = [...new Set([...(state.suggestedNames || []), ...(importedState.suggestedNames || [])])];
+            if(importedState.areaResponsibleName) { state.areaResponsibleName = importedState.areaResponsibleName; state.areaResponsibleTitle = importedState.areaResponsibleTitle; }
+            
+            // Fusionar lista de responsables (v8.13)
+            if(importedState.responsablesList) {
+                if(!state.responsablesList) state.responsablesList = [];
+                importedState.responsablesList.forEach(impResp => {
+                    const exResp = state.responsablesList.find(r => r.area === impResp.area);
+                    if(!exResp) state.responsablesList.push(impResp);
+                });
+            }
+            
+            // 3. Función para finalizar la fusión (fotos y recarga)
+            const finalizeMerge = async () => {
+                document.getElementById('loading-overlay').classList.add('show');
+                document.getElementById('loading-text').textContent = "Guardando...";
+                
+                const pFolder = zip.folder("photos"); 
+                if (pFolder) { const proms = []; pFolder.forEach((relativePath, file) => { if (!file.dir) proms.push(file.async("blob").then(b => photoDB.setItem('photos', relativePath.split('/').pop(), b))); }); await Promise.all(proms); }
+                
+                const liFolder = zip.folder("layoutImages"); 
+                if (liFolder) { const proms = []; liFolder.forEach((relativePath, file) => { if (!file.dir) proms.push(file.async("blob").then(b => photoDB.setItem('layoutImages', relativePath.split('/').pop(), b))); }); await Promise.all(proms); }
+
+                saveState(); 
+                showToast('Fusión completada exitosamente.', 'success'); 
+                setTimeout(() => window.location.reload(), 1500);
+            };
+
+            // 4. Si hay conflictos, detener proceso y mostrar interfaz
+            if (conflicts.length > 0) {
+                document.getElementById('loading-overlay').classList.remove('show');
+                const list = document.getElementById('conflict-list');
+                
+                list.innerHTML = conflicts.map((c, i) => `
+                    <div class="border-2 border-orange-200 rounded-xl p-4 bg-orange-50" data-idx="${i}">
+                        <p class="font-bold text-gray-800 text-lg mb-1"><span class="text-orange-600 font-mono">${c.clave}</span> - ${c.desc}</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                            <label class="border-2 p-3 rounded-xl bg-white cursor-pointer hover:border-indigo-500 flex items-start gap-2 relative transition-colors shadow-sm has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50">
+                                <input type="radio" name="conflict-${i}" value="local" checked class="mt-1 w-5 h-5 text-indigo-600">
+                                <div>
+                                    <span class="block text-[10px] font-black text-gray-400 uppercase tracking-wider">Actual (Esta tableta)</span>
+                                    <span class="block font-bold text-indigo-900 leading-tight">${c.local.user}</span>
+                                    <span class="block text-sm text-indigo-700 font-medium"><i class="fa-solid fa-location-dot mr-1"></i>${c.local.loc}</span>
+                                </div>
+                            </label>
+                            <label class="border-2 p-3 rounded-xl bg-white cursor-pointer hover:border-orange-500 flex items-start gap-2 relative transition-colors shadow-sm has-[:checked]:border-orange-500 has-[:checked]:bg-orange-50">
+                                <input type="radio" name="conflict-${i}" value="imported" class="mt-1 w-5 h-5 text-orange-500">
+                                <div>
+                                    <span class="block text-[10px] font-black text-gray-400 uppercase tracking-wider">A Importar (Archivo ZIP)</span>
+                                    <span class="block font-bold text-orange-900 leading-tight">${c.imported.user}</span>
+                                    <span class="block text-sm text-orange-700 font-medium"><i class="fa-solid fa-location-dot mr-1"></i>${c.imported.loc}</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Esperar a que el usuario resuelva los conflictos
+                document.getElementById('resolve-conflicts-btn').onclick = () => {
+                    conflicts.forEach((c, i) => {
+                        const choice = document.querySelector(`input[name="conflict-${i}"]:checked`).value;
+                        if (choice === 'imported') {
+                            const impItem = c.importedItemFull;
+                            state.inventory[c.index].UBICADO = 'SI';
+                            state.inventory[c.index].RE_ETIQUETADO = impItem.RE_ETIQUETADO || 'NO';
+                            state.inventory[c.index]['NOMBRE DE USUARIO'] = impItem['NOMBRE DE USUARIO'];
+                            state.inventory[c.index].ubicacionEspecifica = impItem.ubicacionEspecifica;
+                            state.inventory[c.index].areaIncorrecta = impItem.areaIncorrecta;
+                        }
+                    });
+                    document.getElementById('conflict-modal').classList.remove('show');
+                    finalizeMerge();
+                };
+
+                document.getElementById('conflict-modal').classList.add('show');
+            } else {
+                // Si no hay conflictos, continuar directo
+                await finalizeMerge();
+            }
+
+        } catch(err) { 
+            console.error(err);
+            showToast('Error al fusionar archivo.', 'error'); 
+            document.getElementById('loading-overlay').classList.remove('show'); 
+        } finally { 
+            e.target.value = ''; 
+        }
+    };
+
+    document.getElementById('export-session-btn').onclick = async () => {
+        document.getElementById('loading-overlay').classList.add('show');
+        try {
+            const zip = new JSZip(); 
+            zip.file("session.json", JSON.stringify(state));
+            
+            const photos = await photoDB.getAllItems('photos'); 
+            if(photos.length > 0) {
+                const photoFolder = zip.folder("photos");
+                photos.forEach(p => photoFolder.file(p.key, p.value));
+            }
+            
+            const layoutImages = await photoDB.getAllItems('layoutImages');
+            if (layoutImages.length > 0) {
+                const layoutImageFolder = zip.folder("layoutImages");
+                layoutImages.forEach(p => layoutImageFolder.file(p.key, p.value));
+            }
+
+            const content = await zip.generateAsync({type:"blob"}); 
+            const a = document.createElement('a'); a.href = URL.createObjectURL(content); a.download = `Inventario_v8.15_${new Date().toISOString().slice(0,10)}.zip`; a.click(); 
+        } catch(e) { showToast('Error exportando', 'error'); }
+        document.getElementById('loading-overlay').classList.remove('show');
+    };
+
+    document.getElementById('import-session-btn').onclick = () => document.getElementById('import-file-input').click();
+    document.getElementById('import-file-input').onchange = async e => {
+        document.getElementById('loading-overlay').classList.add('show');
+        try {
+            const zip = await new JSZip().loadAsync(e.target.files[0]); 
+            localStorage.setItem('inventarioProState', await zip.file('session.json').async('string'));
+            
+            const pFolder = zip.folder("photos"); 
+            if(pFolder) { 
+                const proms=[]; 
+                pFolder.forEach((p,f) => { if(!f.dir) proms.push(f.async("blob").then(b=>photoDB.setItem('photos', f.name.split('/').pop(), b))); }); 
+                await Promise.all(proms); 
+            }
+
+            const liFolder = zip.folder("layoutImages");
+            if(liFolder) {
+                const proms=[];
+                liFolder.forEach((p,f) => { if(!f.dir) proms.push(f.async("blob").then(b=>photoDB.setItem('layoutImages', f.name.split('/').pop(), b))); }); 
+                await Promise.all(proms);
+            }
+
+            window.location.reload();
+        } catch(err) { 
+            document.getElementById('loading-overlay').classList.remove('show'); 
+            showToast('Error al importar', 'error'); 
+        }
+    };
+
+    document.getElementById('clear-session-btn').onclick = () => {
+        showConfirm('¡PELIGRO! Borrar Todo', '¿Estás completamente seguro? Esto eliminará todo el inventario, usuarios y FOTOS de esta tableta de manera irreversible.', () => {
+            document.getElementById('loading-overlay').classList.add('show'); document.getElementById('loading-text').textContent = "Borrando...";
+            localStorage.removeItem('inventarioProState');
+            try { 
+                // Fix para que no se quede colgado
+                if(photoDB.db) { photoDB.db.close(); }
+                const req = indexedDB.deleteDatabase('InventarioProPhotosDB');
+                req.onsuccess = () => window.location.reload(); 
+                req.onerror = () => { showToast('Error limpiando fotos', 'error'); window.location.reload(); }; 
+                req.onblocked = () => { window.location.reload(); };
+            } catch(e) { window.location.reload(); }
+        });
+    };
+
+    // Asegurarse de apagar la cámara y lector QR siempre que se cierre cualquier modal con el botón de "cerrar" (X o cancelar)
+    document.querySelectorAll('.modal-overlay .fa-xmark, button[id$="-cancel-btn"], button[id$="-close-btn"]').forEach(b => b.onclick = e => { 
+        e.target.closest('.modal-overlay').classList.remove('show'); 
+        stopCamera(); 
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().catch(err => console.error("Error stopping QR from X button", err));
+        }
+        focusSearch();
+    });
+
+    photoDB.init().then(() => {
+        const stored = localStorage.getItem('inventarioProState'); 
+        if(stored) { 
+            state = {...state, ...JSON.parse(stored)}; 
+            if(state.areaNames) Object.assign(NOMBRES_AREAS, state.areaNames);
+            recalculateLocationCounts(); 
+        }
+        document.getElementById('employee-login-btn').onclick = () => { if(document.getElementById('employee-number-input').value) { state.loggedIn=true; state.currentUser={name:"Auditor"}; saveState(); showMain(); } };
+        if(state.loggedIn) showMain(); else {
+            document.getElementById('login-page').classList.remove('hidden');
+            setTimeout(() => document.getElementById('employee-number-input').focus(), 100);
+        }
+    });
+
+    function showMain() { document.getElementById('login-page').classList.add('hidden'); document.getElementById('main-app').classList.remove('hidden'); document.getElementById('current-user-name').textContent = state.currentUser.name; updateHeaderArea(); populateFilters(); renderDashboard(); changeTab('users'); updateDatalists(); }
+});
+</script>
+</body>
+</html>
