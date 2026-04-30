@@ -1,4 +1,4 @@
-const CACHE_NAME = 'invpro-v8.15-cache';
+const CACHE_NAME = 'invpro-v8.20-cache';
 const urlsToCache = [
   './',
   './index.html',

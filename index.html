@@ -187,7 +187,7 @@
 
     <div id="formato-entrada-modal" class="modal-overlay" style="z-index: 1050;"><div class="bg-white p-6 rounded-2xl w-full max-w-md text-center shadow-2xl"><i class="fa-solid fa-file-contract text-5xl text-indigo-500 mb-3"></i><h3 class="text-2xl font-bold mb-2">Bien Personal</h3><p class="mb-6 text-lg text-gray-600">¿Este equipo cuenta con formato de entrada al área?</p><div class="flex justify-center gap-3"><button id="formato-entrada-no" class="px-6 py-3 text-white bg-red-500 rounded-xl text-lg font-bold flex-1">No</button><button id="formato-entrada-si" class="px-6 py-3 text-white bg-green-500 rounded-xl text-lg font-bold flex-1">Sí</button></div></div></div>
     
-    <div id="photo-modal" class="modal-overlay" style="z-index: 1050;"><div class="bg-white p-6 rounded-2xl w-full max-w-4xl shadow-2xl"><h3 id="photo-modal-title" class="font-black mb-4 text-xl border-b pb-2 text-indigo-900 truncate">Fotografía</h3><div class="flex flex-col md:flex-row gap-4"><div id="photo-view-container" class="hidden text-center w-full"><img id="item-photo-img" src="" class="max-h-80 mx-auto rounded-xl shadow-md border-4 border-gray-200"><button id="delete-photo-btn" class="mt-4 px-6 py-3 text-white bg-red-500 rounded-xl text-lg font-bold w-full max-w-sm mx-auto block"><i class="fa-solid fa-trash mr-2"></i> Eliminar Foto</button></div><input type="file" id="photo-input" class="hidden" accept="image/*"><div id="camera-view-container" class="hidden w-full flex-col"><video id="camera-stream" playsinline class="w-full rounded-2xl shadow-inner bg-black max-h-80 object-cover"></video><canvas id="photo-canvas" class="hidden"></canvas><div class="flex gap-3 mt-4"><button id="capture-photo-btn" class="flex-[3] py-4 btn-gradient rounded-xl text-xl font-bold text-white w-full shadow-md"><i class="fa-solid fa-circle-camera mr-2"></i> Capturar Foto</button><button id="upload-gallery-btn" class="flex-[1] py-4 bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors rounded-xl text-xl font-bold w-full shadow-md" title="Subir de Galería"><i class="fa-solid fa-image"></i></button></div></div></div><div class="flex justify-end mt-4 border-t pt-4"><button id="photo-close-btn" class="px-6 py-3 bg-gray-200 rounded-xl text-lg font-bold">Cerrar Ventana</button></div></div></div>
+    <div id="photo-modal" class="modal-overlay" style="z-index: 1050;"><div class="bg-white p-6 rounded-2xl w-full max-w-4xl shadow-2xl"><h3 id="photo-modal-title" class="font-black mb-4 text-xl border-b pb-2 text-indigo-900 truncate">Fotografía</h3><div class="flex flex-col md:flex-row gap-4"><div id="photo-view-container" class="hidden text-center w-full"><img id="item-photo-img" src="" class="max-h-80 mx-auto rounded-xl shadow-md border-4 border-gray-200"><button id="delete-photo-btn" class="mt-4 px-6 py-3 text-white bg-red-500 rounded-xl text-lg font-bold w-full max-w-sm mx-auto block"><i class="fa-solid fa-trash mr-2"></i> Eliminar Foto</button></div><div id="photo-upload-container" class="hidden grid-cols-1 md:grid-cols-2 gap-4 w-full"><input type="file" id="photo-input" class="hidden" accept="image/*"></div><div id="camera-view-container" class="hidden w-full flex-col"><video id="camera-stream" playsinline class="w-full rounded-2xl shadow-inner bg-black max-h-80 object-cover"></video><canvas id="photo-canvas" class="hidden"></canvas><div class="flex gap-3 mt-4"><button id="capture-photo-btn" class="flex-[2] py-4 btn-gradient rounded-xl text-xl font-bold text-white w-full"><i class="fa-solid fa-circle-camera mr-2"></i> Capturar Foto</button></div></div></div><div class="flex justify-end mt-4 border-t pt-4"><button id="photo-close-btn" class="px-6 py-3 bg-gray-200 rounded-xl text-lg font-bold">Cerrar Ventana</button></div></div></div>
 
     <div id="app-container" class="min-h-screen p-2 md:p-4 bg-gray-100">
         
@@ -237,18 +237,19 @@
                     <button data-tab="inventory" class="tab-btn"><i class="fa-solid fa-box-open mr-1"></i>Inventario</button>
                     <button data-tab="adicionales" class="tab-btn"><i class="fa-solid fa-plus-circle mr-1"></i>Adicionales</button>
                     
-                    <div class="ml-auto flex flex-wrap items-center gap-2 mb-1 mt-2 md:mt-0 w-full md:w-auto order-last md:order-none justify-end">
-                        <div id="nav-inventory-actions" class="hidden flex gap-2 w-full md:w-auto justify-end">
+                    <!-- AJUSTE BÚSQUEDA 100% EN MÓVILES -->
+                    <div class="ml-auto flex flex-wrap md:flex-nowrap items-center gap-2 mb-1 mt-2 md:mt-0 w-full md:w-auto order-last md:order-none justify-end">
+                        <div id="nav-inventory-actions" class="hidden flex gap-1.5 w-full md:w-auto justify-center md:justify-end">
                             <button id="nav-ubicado-btn" class="bg-green-500 hover:bg-green-600 text-white w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-colors" title="Asignar Seleccionados"><i class="fa-solid fa-check-double text-base"></i></button>
                             <button id="nav-desubicar-btn" class="bg-orange-500 hover:bg-orange-600 text-white w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-colors" title="Des-asignar"><i class="fa-solid fa-rotate-left text-base"></i></button>
                             <button id="nav-bulk-note-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-colors" title="Añadir Nota Masiva"><i class="fa-solid fa-note-sticky text-base"></i></button>
-                            <button id="nav-bulk-photo-btn" class="bg-blue-500 hover:bg-blue-600 text-white w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-colors" title="Añadir Foto Masiva"><i class="fa-solid fa-camera text-base"></i></button>
+                            <button id="nav-bulk-photo-btn" class="bg-pink-500 hover:bg-pink-600 text-white w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-colors" title="Cargar Foto Masiva"><i class="fa-solid fa-camera-retro text-base"></i></button>
                             <button id="nav-qr-scan-btn" class="bg-purple-600 hover:bg-purple-700 text-white w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-colors" title="Escanear QR"><i class="fa-solid fa-qrcode text-base"></i></button>
                             <button id="nav-clear-search-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 w-10 h-10 rounded-xl shadow-sm flex items-center justify-center transition-colors" title="Limpiar Filtros"><i class="fa-solid fa-eraser text-base"></i></button>
                         </div>
-                        <div class="relative w-full md:w-72 mt-2 md:mt-0 flex-grow">
+                        <div class="relative w-full md:w-64 flex-grow">
                             <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm z-10"></i>
-                            <input type="search" inputmode="search" id="global-search-input" placeholder="Buscar..." class="w-full border-2 border-indigo-200 !pl-11 p-3 rounded-xl text-base bg-gray-50 focus:bg-white focus:border-indigo-500 transition-colors shadow-sm outline-none font-bold text-gray-700 relative">
+                            <input type="search" inputmode="search" id="global-search-input" placeholder="Buscar..." class="w-full border-2 border-indigo-200 !pl-11 p-2 rounded-xl text-base bg-gray-50 focus:bg-white focus:border-indigo-500 transition-colors shadow-sm outline-none font-bold text-gray-700 relative">
                         </div>
                     </div>
                     <button data-tab="settings" class="tab-btn mr-1 !bg-transparent !border-none hover:text-indigo-600"><i class="fa-solid fa-gear"></i></button>
@@ -442,6 +443,29 @@
                             <button id="clear-session-btn" class="md:col-span-2 py-5 bg-red-600 text-white rounded-xl font-bold text-xl shadow-md hover:bg-red-700 transition-transform hover:-translate-y-1 mt-6 border-4 border-red-300"><i class="fa-solid fa-trash-can block text-3xl mb-2"></i>4. Borrar Toda la Sesión</button>
                         </div>
 
+                        <!-- AJUSTE PERFILES MÁGICOS DINÁMICOS -->
+                        <div class="mt-10 border-t-2 pt-8">
+                            <h4 class="text-2xl font-extrabold text-indigo-900 mb-4"><i class="fa-solid fa-wand-magic-sparkles mr-2 text-indigo-500"></i>Perfiles de Autollenado Mágico</h4>
+                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-4">
+                                <p class="text-sm text-gray-500 mb-3 font-medium">Agrega prefijos de series comunes (ej. "SN123") para que el sistema reconozca y autocompleta equipos idénticos al instante.</p>
+                                <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                                    <input type="text" id="new-magic-regex" placeholder="Prefijo (Ej. SN12)" class="border-2 p-2 rounded-lg font-mono uppercase bg-white border-indigo-200 focus:border-indigo-500 outline-none">
+                                    <input type="text" id="new-magic-desc" list="lista-descripciones" placeholder="Descripción" class="border-2 p-2 rounded-lg uppercase bg-white outline-none focus:border-indigo-500">
+                                    <input type="text" id="new-magic-marca" list="lista-marcas" placeholder="Marca" class="border-2 p-2 rounded-lg uppercase bg-white outline-none focus:border-indigo-500">
+                                    <input type="text" id="new-magic-modelo" list="lista-modelos" placeholder="Modelo" class="border-2 p-2 rounded-lg uppercase bg-white outline-none focus:border-indigo-500">
+                                    <button id="add-magic-btn" class="bg-indigo-600 text-white font-bold rounded-lg shadow hover:bg-indigo-700 transition-colors py-2"><i class="fa-solid fa-plus mr-1"></i> Agregar</button>
+                                </div>
+                                <div class="mt-3">
+                                    <select id="new-magic-posesion" class="border-2 p-2 rounded-lg w-full md:w-auto bg-white outline-none focus:border-indigo-500">
+                                        <option value="Cámara">Cámara</option>
+                                        <option value="Arrendamiento">Arrendamiento</option>
+                                        <option value="Propiedad del Grupo">Propiedad del Grupo</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="settings-magic-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
+                        </div>
+
                         <div class="mt-10 border-t-2 pt-8">
                             <h4 class="text-2xl font-extrabold text-indigo-900 mb-4"><i class="fa-solid fa-users-viewfinder mr-2"></i>Responsables de Área Identificados</h4>
                             <div id="settings-responsables-list" class="space-y-3 grid grid-cols-1 md:grid-cols-2 gap-4"></div>
@@ -487,9 +511,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // ==========================================
-    // ATAJO DE TECLADO ENTER GLOBAL (v8.13)
-    // ==========================================
     document.addEventListener('keydown', e => {
         if(e.key === 'Enter') {
             if(!document.getElementById('login-page').classList.contains('hidden')) {
@@ -521,17 +542,17 @@ const NOMBRES_AREAS = {
 };
 
 // ==========================================
-// PERFILES MÁGICOS LIMITADOS A ARRENDAMIENTO Y CÁMARA
+// PERFILES MÁGICOS POR DEFECTO
 // ==========================================
-const perfilesMagicos = [
-    { regex: /^MZ01/i, desc: 'CPU', marca: 'LENOVO', modelo: '12T9', posesion: 'Arrendamiento' },
-    { regex: /^VR00/i, desc: 'MONITOR', marca: 'LENOVO', modelo: 'S22I-30', posesion: 'Arrendamiento' },
-    { regex: /^8SSD51/i, desc: 'TECLADO', marca: 'LENOVO', modelo: 'KU1601', posesion: 'Arrendamiento' },
-    { regex: /^8SSM51/i, desc: 'MOUSE', marca: 'LENOVO', modelo: 'MOJUUO', posesion: 'Arrendamiento' },
-    { regex: /^PF[A-Z0-9]{6}/i, desc: 'LAPTOP', marca: 'LENOVO', modelo: 'THINKPAD', posesion: 'Arrendamiento' },
-    { regex: /^12240/i, desc: 'REGULADOR DE VOLTAJE', marca: 'SMARTBITT', modelo: 'SBNB500', posesion: 'Arrendamiento' },
-    { regex: /^22WZ/i, desc: 'TELÉFONO', marca: 'AVAYA', modelo: 'VANTAGE 12', posesion: 'Cámara' },
-    { regex: /^17WZ[A-Z0-9]{8,}/i, desc: 'TELÉFONO', marca: 'AVAYA', modelo: '9611G', posesion: 'Cámara' }
+const defaultPerfilesMagicos = [
+    { regexStr: '^MZ01', desc: 'CPU', marca: 'LENOVO', modelo: '12T9', posesion: 'Arrendamiento' },
+    { regexStr: '^VR00', desc: 'MONITOR', marca: 'LENOVO', modelo: 'S22I-30', posesion: 'Arrendamiento' },
+    { regexStr: '^8SSD51', desc: 'TECLADO', marca: 'LENOVO', modelo: 'KU1601', posesion: 'Arrendamiento' },
+    { regexStr: '^8SSM51', desc: 'MOUSE', marca: 'LENOVO', modelo: 'MOJUUO', posesion: 'Arrendamiento' },
+    { regexStr: '^PF[A-Z0-9]{6}', desc: 'LAPTOP', marca: 'LENOVO', modelo: 'THINKPAD', posesion: 'Arrendamiento' },
+    { regexStr: '^12240', desc: 'REGULADOR DE VOLTAJE', marca: 'SMARTBITT', modelo: 'SBNB500', posesion: 'Arrendamiento' },
+    { regexStr: '^22WZ', desc: 'TELÉFONO', marca: 'AVAYA', modelo: 'VANTAGE 12', posesion: 'Cámara' },
+    { regexStr: '^17WZ[A-Z0-9]{8,}', desc: 'TELÉFONO', marca: 'AVAYA', modelo: '9611G', posesion: 'Cámara' }
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -540,13 +561,20 @@ document.addEventListener('DOMContentLoaded', () => {
         resguardantes: [], activeResguardante: null, locations: {}, areas: [], areaNames: {},
         responsablesList: [], 
         additionalPhotos: {}, locationPhotos: {}, notes: {}, photos: {}, userPhotos: {}, serialNumberCache: new Set(),
-        suggestedNames: []
+        suggestedNames: [], perfilesMagicos: []
     };
     
     let tempUserLocations = []; 
     let searchHistory = [];
     let cameraStream = null;
     let html5QrCode = null;
+
+    function matchMagicProfile(val) {
+        if(!state.perfilesMagicos) return null;
+        return state.perfilesMagicos.find(p => {
+            try { return new RegExp(p.regexStr, 'i').test(val); } catch(e) { return false; }
+        });
+    }
 
     function focusSearch() {
         const input = document.getElementById('global-search-input');
@@ -571,7 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.className = `px-6 py-3 rounded-xl text-white shadow-xl font-bold text-lg mb-2 transition-all transform pointer-events-auto ${type==='error'?'bg-red-600':type==='warning'?'bg-yellow-500':'bg-gray-800'}`;
         toast.innerHTML = `<i class="fa-solid ${type==='error'?'fa-circle-exclamation':'fa-circle-check'} mr-2"></i> ${message}`;
         document.getElementById('toast-container').appendChild(toast);
-        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 4000);
+        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
     }
 
     const photoDB = {
@@ -627,9 +655,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modal-cancel').onclick = () => document.getElementById('confirmation-modal').classList.remove('show');
     }
     
-    // ==========================================
-    // CAMARA ROBUSTA Y VELOZ (v8.14)
-    // ==========================================
     async function startCamera() {
         stopCamera(); 
         try {
@@ -684,25 +709,95 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // AJUSTE: PORCENTAJE DE AVANCE POR ÁREA
     function renderResponsablesSettings() {
         const container = document.getElementById('settings-responsables-list');
         if(!state.responsablesList || state.responsablesList.length === 0) {
             container.innerHTML = '<p class="text-gray-500 italic md:col-span-2">No se han identificado responsables en los archivos cargados.</p>';
             return;
         }
-        container.innerHTML = state.responsablesList.map((r) => `
-            <div class="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <div class="flex-1 pr-2">
-                    <p class="font-bold text-indigo-900 text-xs mb-1 uppercase tracking-wide">ÁREA ${r.area} ${r.areaName ? '- ' + r.areaName : ''}</p>
-                    <p class="font-black text-gray-800 text-lg leading-tight">${r.name}</p>
-                    <p class="text-sm text-gray-500 font-medium">${r.title}</p>
+        container.innerHTML = state.responsablesList.map((r) => {
+            const areaItems = state.inventory.filter(i => i.areaOriginal === r.area);
+            const total = areaItems.length;
+            const ubicados = areaItems.filter(i => i.UBICADO === 'SI').length;
+            const pct = total > 0 ? Math.round((ubicados / total) * 100) : 0;
+            
+            return `
+            <div class="flex flex-col bg-white p-5 rounded-2xl border-2 border-gray-100 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 left-0 h-1.5 w-full bg-gray-100"><div class="h-full bg-indigo-500 transition-all duration-1000" style="width: ${pct}%"></div></div>
+                <div class="flex justify-between items-start mt-2">
+                    <div class="flex-1 pr-2">
+                        <p class="font-bold text-indigo-900 text-[11px] mb-1 uppercase tracking-wider bg-indigo-50 inline-block px-2 py-0.5 rounded text-indigo-700">ÁREA ${r.area} ${r.areaName ? '- ' + r.areaName : ''}</p>
+                        <p class="font-black text-gray-800 text-xl leading-tight mt-1">${r.name}</p>
+                        <p class="text-sm text-gray-500 font-medium">${r.title}</p>
+                    </div>
+                    <button class="px-3 py-2 bg-gray-100 text-gray-600 font-bold rounded-lg hover:bg-indigo-100 hover:text-indigo-700 transition-colors shadow-sm text-sm" onclick="copyRespText('${escapeHTML(r.name)}')">
+                        <i class="fa-regular fa-copy"></i>
+                    </button>
                 </div>
-                <button class="px-4 py-3 bg-indigo-100 text-indigo-700 font-bold rounded-xl hover:bg-indigo-200 transition-colors shadow-sm" onclick="copyRespText('${escapeHTML(r.name)}')">
-                    <i class="fa-regular fa-copy"></i> Copiar
-                </button>
+                <div class="mt-4 pt-3 border-t border-gray-100">
+                    <div class="flex justify-between text-xs font-black mb-1.5 ${pct === 100 ? 'text-green-600' : 'text-gray-500'}">
+                        <span><i class="fa-solid fa-boxes-stacked mr-1"></i>Avance: ${ubicados} de ${total}</span>
+                        <span>${pct}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="${pct === 100 ? 'bg-green-500' : 'bg-indigo-400'} h-2 rounded-full" style="width: ${pct}%"></div>
+                    </div>
+                </div>
+            </div>
+        `}).join('');
+    }
+
+    // AJUSTE: RENDERIZADO DE PERFILES MÁGICOS
+    function renderMagicProfiles() {
+        const container = document.getElementById('settings-magic-list');
+        if(!container) return;
+        if(state.perfilesMagicos.length === 0) {
+            container.innerHTML = '<p class="text-gray-400 text-sm italic py-2">No hay perfiles configurados.</p>';
+            return;
+        }
+        container.innerHTML = state.perfilesMagicos.map((p, i) => `
+            <div class="flex justify-between items-center p-3 border-2 border-indigo-50 rounded-xl bg-white shadow-sm mb-2 hover:border-indigo-200 transition-colors">
+                <div class="flex-1 overflow-hidden pr-2">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="font-mono text-xs font-black bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded tracking-widest">${p.regexStr}</span>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase border border-gray-200 px-1.5 rounded">${p.posesion}</span>
+                    </div>
+                    <p class="font-bold text-sm text-gray-800 truncate"><i class="fa-solid fa-bolt text-yellow-400 mr-1"></i>${p.desc} <span class="font-medium text-gray-500 ml-1">(${p.marca} ${p.modelo})</span></p>
+                </div>
+                <button onclick="deleteMagicProfile(${i})" class="w-10 h-10 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors shadow-sm flex-shrink-0 flex items-center justify-center"><i class="fa-solid fa-trash"></i></button>
             </div>
         `).join('');
     }
+
+    window.deleteMagicProfile = (i) => {
+        state.perfilesMagicos.splice(i, 1);
+        saveState();
+        renderMagicProfiles();
+    };
+
+    document.getElementById('add-magic-btn').onclick = () => {
+        const regexStr = document.getElementById('new-magic-regex').value.trim().toUpperCase();
+        const desc = document.getElementById('new-magic-desc').value.trim().toUpperCase();
+        const marca = document.getElementById('new-magic-marca').value.trim().toUpperCase();
+        const modelo = document.getElementById('new-magic-modelo').value.trim().toUpperCase();
+        const posesion = document.getElementById('new-magic-posesion').value;
+
+        if(!regexStr || !desc) return showToast('Prefijo y descripción obligatorios', 'warning');
+        
+        let finalRegexStr = regexStr;
+        if(!finalRegexStr.startsWith('^')) finalRegexStr = '^' + finalRegexStr;
+
+        state.perfilesMagicos.push({ regexStr: finalRegexStr, desc, marca, modelo, posesion });
+        saveState();
+        renderMagicProfiles();
+        showToast('Perfil mágico guardado', 'success');
+        
+        document.getElementById('new-magic-regex').value = '';
+        document.getElementById('new-magic-desc').value = '';
+        document.getElementById('new-magic-marca').value = '';
+        document.getElementById('new-magic-modelo').value = '';
+    };
 
     document.getElementById('upload-btn').onclick = () => document.getElementById('file-input').click();
     document.getElementById('file-input').onchange = async e => {
@@ -852,6 +947,7 @@ document.addEventListener('DOMContentLoaded', () => {
             globalSearch.disabled = true; 
             invActions.classList.add('hidden');
             renderResponsablesSettings();
+            renderMagicProfiles();
         }
 
         updateBanner();
@@ -1124,24 +1220,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     document.getElementById('nav-ubicado-btn').onclick = ()=>doAction('ubicar'); document.getElementById('nav-desubicar-btn').onclick = ()=>doAction('desubicar');
 
-    // ==========================================
-    // NOTA MASIVA Y FOTO MASIVA (v8.15)
-    // ==========================================
     document.getElementById('nav-bulk-note-btn').onclick = () => {
         const cbs = document.querySelectorAll('.inv-cb:checked'); 
         if(!cbs.length) return showToast('Selecciona bienes para la nota masiva', 'warning');
-        
         document.getElementById('note-textarea').value = ''; 
         document.getElementById('note-save-btn').dataset.c = 'BULK'; 
         document.getElementById('notes-modal').classList.add('show'); 
         setTimeout(() => document.getElementById('note-textarea').focus(), 100);
     };
 
+    // AJUSTE: FOTO MASIVA
     document.getElementById('nav-bulk-photo-btn').onclick = () => {
         const cbs = document.querySelectorAll('.inv-cb:checked'); 
         if(!cbs.length) return showToast('Selecciona bienes para foto masiva', 'warning');
         
-        showPhoto('bulk', 'BULK');
+        document.getElementById('photo-input').dataset.t = 'inventory-bulk';
+        document.getElementById('photo-input').dataset.bulkIds = Array.from(cbs).map(cb => cb.closest('tr').dataset.clave).join(',');
+        
+        const view = document.getElementById('photo-view-container'); const up = document.getElementById('photo-upload-container'); const cam = document.getElementById('camera-view-container');
+        view.classList.add('hidden'); up.classList.add('hidden'); cam.classList.add('hidden'); cam.classList.remove('flex'); 
+        
+        document.getElementById('photo-modal-title').textContent = `Foto Masiva (${cbs.length} bienes)`;
+        const capBtn = document.getElementById('capture-photo-btn');
+        capBtn.disabled = false;
+        capBtn.innerHTML = '<i class="fa-solid fa-camera-retro mr-2"></i> Capturar Foto a Todos';
+        
+        cam.classList.remove('hidden'); cam.classList.add('flex'); startCamera();
+        document.getElementById('photo-modal').classList.add('show');
     };
 
     document.getElementById('ad-posesion').addEventListener('change', function(e) {
@@ -1162,7 +1267,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.additionalItems.forEach(item => {
             if (item.serie) {
                 const val = String(item.serie).toUpperCase().trim();
-                const perfil = perfilesMagicos.find(p => p.regex.test(val));
+                const perfil = matchMagicProfile(val);
                 
                 if (perfil) {
                     let changed = false;
@@ -1192,7 +1297,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (adicMatch) { warningDiv.innerHTML = `⚠️ Existe en adicionales.<br><a href="#" onclick="showAdicDetail('${adicMatch.id}'); return false;" class="underline font-black cursor-pointer">${adicMatch.claveAsignada || 'S/C'}</a>`; warningDiv.classList.remove('hidden'); }
         }
         
-        const perfil = perfilesMagicos.find(p => p.regex.test(val));
+        const perfil = matchMagicProfile(val);
         if(perfil) { 
             document.getElementById('ad-desc').value = perfil.desc; document.getElementById('ad-marca').value = perfil.marca; document.getElementById('ad-modelo').value = perfil.modelo; 
             document.getElementById('ad-posesion').value = perfil.posesion || 'Cámara';
@@ -1218,7 +1323,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('ad-modelo').value = adicMatch.modelo || '';
             showToast('Copiado de Adicionales Exacto.', 'success');
         } else {
-            const perfil = perfilesMagicos.find(p => p.regex.test(val));
+            const perfil = matchMagicProfile(val);
             if (perfil) {
                 document.getElementById('ad-desc').value = perfil.desc;
                 document.getElementById('ad-marca').value = perfil.marca || '';
@@ -1399,9 +1504,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('item-detail-view-modal').classList.add('show');
     };
     
-    // ==========================================
-    // NOTAS (v8.13 AUTO-FOCUS Y MASIVA)
-    // ==========================================
     window.showNoteModal = c => { 
         document.getElementById('note-textarea').value = state.notes[c]||''; 
         document.getElementById('note-save-btn').dataset.c = c; 
@@ -1440,9 +1542,7 @@ document.addEventListener('DOMContentLoaded', () => {
         view.classList.add('hidden'); up.classList.add('hidden'); cam.classList.add('hidden'); cam.classList.remove('flex'); 
         
         let titleText = 'Fotografía';
-        if (type === 'bulk') {
-            titleText = `Foto Masiva (${document.querySelectorAll('.inv-cb:checked').length} bienes)`;
-        } else if(type === 'inventory') {
+        if(type === 'inventory') {
             const item = state.inventory.find(x => x['CLAVE UNICA'] === id);
             if(item) titleText = `${id} - ${(item.DESCRripcion || item.DESCRIPCION).substring(0, 40)}...`;
         } else if(type === 'additional') {
@@ -1457,111 +1557,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const capBtn = document.getElementById('capture-photo-btn');
         capBtn.disabled = false;
         capBtn.innerHTML = '<i class="fa-solid fa-circle-camera mr-2"></i> Capturar Foto';
-        
-        const galBtn = document.getElementById('upload-gallery-btn');
-        if(galBtn) {
-            galBtn.disabled = false;
-            galBtn.innerHTML = '<i class="fa-solid fa-image"></i>';
-        }
 
-        let exists = false; 
-        if(type==='inventory') exists = state.photos[id]; 
-        else if (type==='user') exists = state.userPhotos && state.userPhotos[id]; 
-        else if (type==='additional') exists = state.additionalPhotos[id];
-        else exists = false; 
-
-        if(exists) { 
-            photoDB.getItem('photos', `${type}-${id}`).then(b => { 
-                if(b) { 
-                    document.getElementById('item-photo-img').src=URL.createObjectURL(b); 
-                    view.classList.remove('hidden'); 
-                } 
-            }); 
-        }
-        else { 
-            cam.classList.remove('hidden'); 
-            cam.classList.add('flex'); 
-            startCamera(); 
-        }
+        let exists = false; if(type==='inventory') exists = state.photos[id]; else if (type==='user') exists = state.userPhotos && state.userPhotos[id]; else exists = state.additionalPhotos[id];
+        if(exists) { photoDB.getItem('photos', `${type}-${id}`).then(b => { if(b) { document.getElementById('item-photo-img').src=URL.createObjectURL(b); view.classList.remove('hidden'); } }); }
+        else { cam.classList.remove('hidden'); cam.classList.add('flex'); startCamera(); }
         document.getElementById('photo-modal').classList.add('show');
     };
 
-    // ==========================================
-    // MOTOR DE GUARDADO DE FOTOS (Reutilizable)
-    // ==========================================
-    function savePhotoBlob(blob, type, id, btn, isGallery = false) {
-        if (type === 'bulk') {
-            const cbs = document.querySelectorAll('.inv-cb:checked');
-            let promises = [];
-            cbs.forEach(cb => {
-                const claveElement = cb.closest('tr').dataset.clave;
-                const isAdic = state.additionalItems.some(a => a.id === claveElement);
-                const pType = isAdic ? 'additional' : 'inventory';
-                
-                if(pType === 'inventory') state.photos[claveElement] = true;
-                else state.additionalPhotos[claveElement] = true;
-                
-                promises.push(photoDB.setItem('photos', `${pType}-${claveElement}`, blob));
-            });
-            
-            Promise.all(promises).then(() => {
-                saveState();
-                stopCamera();
-                document.getElementById('photo-modal').classList.remove('show');
-                filterAndRenderInventory();
-                showToast(`Foto aplicada a ${cbs.length} bienes`, 'success');
-                document.getElementById('select-all-checkbox').checked = false;
-                cbs.forEach(cb => cb.checked = false);
-            }).finally(() => {
-                if(btn) { 
-                    btn.disabled = false; 
-                    btn.innerHTML = isGallery ? '<i class="fa-solid fa-image"></i>' : '<i class="fa-solid fa-circle-camera mr-2"></i> Capturar Foto'; 
-                }
-            });
-        } else {
-            if(type==='inventory') state.photos[id]=true; 
-            else if (type==='user') { if(!state.userPhotos) state.userPhotos = {}; state.userPhotos[id]=true; } 
-            else state.additionalPhotos[id]=true; 
-            
-            saveState(); 
-
-            const imgUrl = URL.createObjectURL(blob);
-            
-            stopCamera(); 
-            document.getElementById('photo-modal').classList.remove('show'); 
-            
-            if (type === 'inventory' && document.getElementById('item-detail-view-modal').classList.contains('show')) { 
-                document.getElementById('detail-view-photo').src = imgUrl; 
-                document.getElementById('detail-view-photo').classList.remove('hidden'); 
-                document.getElementById('delete-active-photo-btn').classList.remove('hidden'); 
-                document.getElementById('detail-view-no-photo').classList.add('hidden'); 
-            } else if (type === 'additional' && document.getElementById('adicional-detail-view-modal').classList.contains('show')) { 
-                document.getElementById('ad-det-photo').src = imgUrl; 
-                document.getElementById('ad-det-photo').classList.remove('hidden'); 
-                document.getElementById('ad-delete-photo-btn').classList.remove('hidden'); 
-                document.getElementById('ad-det-no-photo').classList.add('hidden'); 
-            }
-            
-            filterAndRenderInventory(); 
-            renderAdicionales(); 
-            renderUsers();
-
-            photoDB.setItem('photos', `${type}-${id}`, blob).then(() => { 
-                showToast('Foto guardada', 'success');
-            }).catch(() => {
-                showToast('Error de almacenamiento', 'error');
-            }).finally(() => {
-                if(btn) { 
-                    btn.disabled = false; 
-                    btn.innerHTML = isGallery ? '<i class="fa-solid fa-image"></i>' : '<i class="fa-solid fa-circle-camera mr-2"></i> Capturar Foto'; 
-                }
-            });
-        }
-    }
-
-    // ==========================================
-    // CAPTURA ASÍNCRONA INSTANTÁNEA (v8.14)
-    // ==========================================
     document.getElementById('capture-photo-btn').onclick = function() {
         const btn = this;
         if(btn.disabled) return;
@@ -1582,23 +1584,66 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.toBlob(blob => {
             const t = document.getElementById('photo-input').dataset.t; 
             const id = document.getElementById('photo-input').dataset.i;
-            savePhotoBlob(blob, t, id, btn, false);
-        }, 'image/jpeg', 0.8);
-    };
 
-    document.getElementById('upload-gallery-btn').onclick = () => document.getElementById('photo-input').click();
-    document.getElementById('photo-input').onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        const btn = document.getElementById('upload-gallery-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-        
-        const t = document.getElementById('photo-input').dataset.t; 
-        const id = document.getElementById('photo-input').dataset.i;
-        
-        savePhotoBlob(file, t, id, btn, true);
+            // AJUSTE: MODO FOTO MASIVA
+            if (t === 'inventory-bulk') {
+                const ids = document.getElementById('photo-input').dataset.bulkIds.split(',');
+                
+                ids.forEach(bulkId => { state.photos[bulkId] = true; });
+                saveState();
+                
+                stopCamera();
+                document.getElementById('photo-modal').classList.remove('show');
+                document.getElementById('select-all-checkbox').checked = false;
+                filterAndRenderInventory();
+
+                Promise.all(ids.map(bulkId => photoDB.setItem('photos', `inventory-${bulkId}`, blob)))
+                    .then(() => showToast(`Foto guardada en ${ids.length} bienes`, 'success'))
+                    .catch(() => showToast('Error al guardar foto masiva', 'error'))
+                    .finally(() => {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fa-solid fa-circle-camera mr-2"></i> Capturar Foto';
+                    });
+                return;
+            }
+
+            // Flujo Normal
+            if(t==='inventory') state.photos[id]=true; 
+            else if (t==='user') { if(!state.userPhotos) state.userPhotos = {}; state.userPhotos[id]=true; } 
+            else state.additionalPhotos[id]=true; 
+            
+            saveState(); 
+
+            const imgUrl = URL.createObjectURL(blob);
+            stopCamera(); 
+            document.getElementById('photo-modal').classList.remove('show'); 
+            
+            if (t === 'inventory' && document.getElementById('item-detail-view-modal').classList.contains('show')) { 
+                document.getElementById('detail-view-photo').src = imgUrl; 
+                document.getElementById('detail-view-photo').classList.remove('hidden'); 
+                document.getElementById('delete-active-photo-btn').classList.remove('hidden'); 
+                document.getElementById('detail-view-no-photo').classList.add('hidden'); 
+            } else if (t === 'additional' && document.getElementById('adicional-detail-view-modal').classList.contains('show')) { 
+                document.getElementById('ad-det-photo').src = imgUrl; 
+                document.getElementById('ad-det-photo').classList.remove('hidden'); 
+                document.getElementById('ad-delete-photo-btn').classList.remove('hidden'); 
+                document.getElementById('ad-det-no-photo').classList.add('hidden'); 
+            }
+            
+            filterAndRenderInventory(); 
+            renderAdicionales(); 
+            renderUsers();
+
+            photoDB.setItem('photos', `${t}-${id}`, blob).then(() => { 
+                showToast('Foto guardada', 'success');
+            }).catch(() => {
+                showToast('Error de almacenamiento', 'error');
+            }).finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-circle-camera mr-2"></i> Capturar Foto';
+            });
+            
+        }, 'image/jpeg', 0.8);
     };
 
     document.getElementById('delete-photo-btn').onclick = () => {
@@ -1623,9 +1668,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('delete-active-photo-btn').onclick = () => { const id = document.getElementById('detail-view-clave').textContent; deletePhotoFromModal('inventory', id); };
     document.getElementById('ad-delete-photo-btn').onclick = () => { const id = document.getElementById('ad-det-foto-btn').dataset.id; deletePhotoFromModal('additional', id); };
 
-    // ==========================================
-    // QR LECTOR RECONSTRUIDO (v8.10)
-    // ==========================================
     document.getElementById('nav-qr-scan-btn').onclick = () => {
         document.getElementById('qr-modal').classList.add('show');
         if (!html5QrCode) { 
@@ -1635,14 +1677,13 @@ document.addEventListener('DOMContentLoaded', () => {
             { facingMode: "environment" }, 
             { fps: 10, qrbox: {width: 250, height: 250}, aspectRatio: 1.0 },
             (decodedText) => {
-                // Éxito
                 html5QrCode.stop().then(() => {
                     document.getElementById('qr-modal').classList.remove('show'); 
                     showToast('QR Detectado', 'success'); 
                     applySearch(decodedText); 
                 }).catch(err => console.error(err));
             },
-            (error) => { /* ignora errores de escaneo continuo */ }
+            (error) => { }
         ).catch(err => {
             showToast('Error iniciando cámara para QR. Revisa permisos.', 'error');
             document.getElementById('qr-modal').classList.remove('show');
@@ -1659,9 +1700,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ==========================================
-    // FUSIÓN DE SESIONES Y CONFLICTOS (v8.6)
-    // ==========================================
     document.getElementById('merge-session-btn').onclick = () => document.getElementById('merge-file-input').click();
     document.getElementById('merge-file-input').onchange = async e => {
         if(!e.target.files.length) return; 
@@ -1676,7 +1714,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const importedState = JSON.parse(await sessionFile.async('string'));
             let conflicts = [];
 
-            // 1. Detectar conflictos en el inventario
             if(importedState.inventory) { 
                 importedState.inventory.forEach(impItem => { 
                     const exIndex = state.inventory.findIndex(i => i['CLAVE UNICA'] === impItem['CLAVE UNICA']); 
@@ -1706,12 +1743,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }); 
             }
             
-            // 2. Fusionar el resto de la base de datos (aditivos puros)
             if(importedState.additionalItems) { importedState.additionalItems.forEach(impAd => { if (!state.additionalItems.some(i => i.id === impAd.id)) state.additionalItems.push(impAd); }); }
             if(importedState.resguardantes) { importedState.resguardantes.forEach(impUser => { const exUser = state.resguardantes.find(u => u.name === impUser.name); if (exUser) { const mergedLocs = new Set([...(exUser.locations||[]), ...(impUser.locations||[])]); exUser.locations = Array.from(mergedLocs); } else { state.resguardantes.push(impUser); } }); }
             
             Object.keys(importedState).forEach(key => {
-                if (!['inventory', 'additionalItems', 'resguardantes', 'notes', 'photos', 'userPhotos', 'additionalPhotos', 'locations', 'areas', 'areaNames', 'suggestedNames'].includes(key)) {
+                if (!['inventory', 'additionalItems', 'resguardantes', 'notes', 'photos', 'userPhotos', 'additionalPhotos', 'locations', 'areas', 'areaNames', 'suggestedNames', 'perfilesMagicos'].includes(key)) {
                     if (typeof importedState[key] === 'object' && importedState[key] !== null && !Array.isArray(importedState[key])) { state[key] = { ...(state[key] || {}), ...importedState[key] }; } 
                     else if (Array.isArray(importedState[key])) { if (key === 'activityLog') state[key] = [...(state[key] || []), ...importedState[key]]; else state[key] = importedState[key]; } 
                     else { if (state[key] === undefined) state[key] = importedState[key]; }
@@ -1720,9 +1756,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             state.notes = { ...state.notes, ...(importedState.notes || {}) }; state.photos = { ...state.photos, ...(importedState.photos || {}) }; state.userPhotos = { ...(state.userPhotos || {}), ...(importedState.userPhotos || {}) }; state.additionalPhotos = { ...state.additionalPhotos, ...(importedState.additionalPhotos || {}) }; state.locations = { ...state.locations, ...(importedState.locations || {}) }; state.areas = [...new Set([...state.areas, ...(importedState.areas || [])])]; state.areaNames = { ...state.areaNames, ...(importedState.areaNames || {}) };
             state.suggestedNames = [...new Set([...(state.suggestedNames || []), ...(importedState.suggestedNames || [])])];
-            if(importedState.areaResponsibleName) { state.areaResponsibleName = importedState.areaResponsibleName; state.areaResponsibleTitle = importedState.areaResponsibleTitle; }
             
-            // Fusionar lista de responsables (v8.13)
+            if(importedState.perfilesMagicos) {
+                state.perfilesMagicos = importedState.perfilesMagicos;
+            }
+
             if(importedState.responsablesList) {
                 if(!state.responsablesList) state.responsablesList = [];
                 importedState.responsablesList.forEach(impResp => {
@@ -1731,7 +1769,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
             
-            // 3. Función para finalizar la fusión (fotos y recarga)
             const finalizeMerge = async () => {
                 document.getElementById('loading-overlay').classList.add('show');
                 document.getElementById('loading-text').textContent = "Guardando...";
@@ -1747,7 +1784,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => window.location.reload(), 1500);
             };
 
-            // 4. Si hay conflictos, detener proceso y mostrar interfaz
             if (conflicts.length > 0) {
                 document.getElementById('loading-overlay').classList.remove('show');
                 const list = document.getElementById('conflict-list');
@@ -1776,7 +1812,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `).join('');
 
-                // Esperar a que el usuario resuelva los conflictos
                 document.getElementById('resolve-conflicts-btn').onclick = () => {
                     conflicts.forEach((c, i) => {
                         const choice = document.querySelector(`input[name="conflict-${i}"]:checked`).value;
@@ -1795,7 +1830,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 document.getElementById('conflict-modal').classList.add('show');
             } else {
-                // Si no hay conflictos, continuar directo
                 await finalizeMerge();
             }
 
@@ -1865,7 +1899,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('loading-overlay').classList.add('show'); document.getElementById('loading-text').textContent = "Borrando...";
             localStorage.removeItem('inventarioProState');
             try { 
-                // Fix para que no se quede colgado
                 if(photoDB.db) { photoDB.db.close(); }
                 const req = indexedDB.deleteDatabase('InventarioProPhotosDB');
                 req.onsuccess = () => window.location.reload(); 
@@ -1875,7 +1908,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // Asegurarse de apagar la cámara y lector QR siempre que se cierre cualquier modal con el botón de "cerrar" (X o cancelar)
     document.querySelectorAll('.modal-overlay .fa-xmark, button[id$="-cancel-btn"], button[id$="-close-btn"]').forEach(b => b.onclick = e => { 
         e.target.closest('.modal-overlay').classList.remove('show'); 
         stopCamera(); 
@@ -1892,6 +1924,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if(state.areaNames) Object.assign(NOMBRES_AREAS, state.areaNames);
             recalculateLocationCounts(); 
         }
+        
+        // Inicializar perfiles mágicos si están vacíos
+        if (!state.perfilesMagicos || state.perfilesMagicos.length === 0) {
+            state.perfilesMagicos = defaultPerfilesMagicos;
+        }
+
         document.getElementById('employee-login-btn').onclick = () => { if(document.getElementById('employee-number-input').value) { state.loggedIn=true; state.currentUser={name:"Auditor"}; saveState(); showMain(); } };
         if(state.loggedIn) showMain(); else {
             document.getElementById('login-page').classList.remove('hidden');
